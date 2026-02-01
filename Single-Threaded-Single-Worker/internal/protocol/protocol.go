@@ -24,6 +24,17 @@ type CrackingJob struct {
 	FullHash string
 }
 
+type WorkerMetrics struct {
+	TotalCrackingTimeNanos int64 `json:"total_cracking_time_ns"`
+	WorkerReceiveJobNanos  int64 `json:"worker_receive_job_ns"`
+	WorkerSentResultsNanos int64 `json:"worker_sent_results_ns"`
+}
+
+type CrackResult struct {
+	Password string        `json:"password"`
+	Metrics  WorkerMetrics `json:"metrics"`
+}
+
 const (
 	shadowFieldCount = 9
 	shadowDelimiter  = ":"

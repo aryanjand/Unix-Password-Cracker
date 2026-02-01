@@ -15,6 +15,8 @@ import (
 )
 
 func main() {
+	processStarted := time.Now()
+	parseStart := time.Now()
 	log.SetPrefix("[Controller] ")
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 
@@ -33,13 +35,15 @@ func main() {
 		log.Fatal(err)
 	}
 
+	parseTime := time.Since(parseStart)
+
 	log.Printf("Job Created")
 	log.Printf("	Id: %d", job.Id)
 	log.Printf("	Username: %s", job.Username)
 	log.Printf("	Settings: %s", job.Setting)
 	log.Printf("	FullHash: %s", job.FullHash)
 
-	address := fmt.Sprintf("localhost:%d", args.Port)
+	address := fmt.Sprintf(":%d", args.Port)
 	ln, err := net.Listen(protocol.TCP, address)
 	if err != nil {
 		log.Fatal(err)
@@ -54,32 +58,53 @@ func main() {
 	}
 	defer conn.Close()
 
-	password, err := handleWorkerConnection(conn, job)
+	result, dispatchLatency, returnLatency, err := handleWorkerConnection(conn, job)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	if password != "" {
-		log.Println("Password Found: ", password)
+	if result.Password != "" {
+		log.Println("Password Found: ", result.Password)
 	} else {
 		log.Println("Password Not Found")
 	}
 
+	endToEnd := time.Since(processStarted)
+	fmt.Println("\n==== Cracking Results ====")
+	if result.Password != "" {
+		fmt.Println("Password Found:", result.Password)
+	} else {
+		fmt.Println("Password Not Found")
+	}
+
+	fmt.Println("\n==== Metrics ====")
+	fmt.Printf("Controller parse time:    %v\n", parseTime)
+	fmt.Printf("Job dispatch latency:     %v\n", dispatchLatency)
+	fmt.Printf("Worker cracking time:     %v\n",
+		time.Duration(result.Metrics.TotalCrackingTimeNanos))
+	fmt.Printf("Result return latency:    %v\n", returnLatency)
+	fmt.Printf("End-to-end runtime:       %v\n", endToEnd)
 	os.Exit(0)
 
 }
 
-func handleWorkerConnection(conn net.Conn, job *protocol.CrackingJob) (string, error) {
+func handleWorkerConnection(conn net.Conn, job *protocol.CrackingJob) (*protocol.CrackResult, time.Duration, time.Duration, error) {
 
 	reader := bufio.NewReader(conn)
 	encoder := json.NewEncoder(conn)
+	decoder := json.NewDecoder(conn)
 	conn.SetReadDeadline(time.Now().Add(30 * time.Second))
 
+	var (
+		result            *protocol.CrackResult
+		jobSentStart      time.Time
+		resultsReceiveEnd time.Time
+	)
 	for {
 
 		line, err := reader.ReadString('\n')
 		if err != nil {
-			log.Println("read error: ", err)
+			return nil, 0, 0, err
 		}
 
 		cmd := strings.TrimSpace(line)
@@ -92,19 +117,22 @@ func handleWorkerConnection(conn net.Conn, job *protocol.CrackingJob) (string, e
 
 		case protocol.READY:
 			log.Println(("Sending cracking job"))
+			jobSentStart = time.Now()
 			if err := encoder.Encode(job); err != nil {
-				return "", err
+				return nil, 0, 0, err
 			}
 
 		case protocol.SUCCESS:
-			passwordLine, err := reader.ReadString('\n')
-			if err != nil {
-				log.Println("failed to read password: ", err)
+			if err := decoder.Decode(&result); err != nil {
+				return nil, 0, 0, err
 			}
-			return strings.TrimSpace(passwordLine), nil
+			resultsReceiveEnd = time.Now()
+			jobDispatchLatency := time.Unix(0, result.Metrics.WorkerReceiveJobNanos).Sub(jobSentStart)
+			resultReturnLatency := resultsReceiveEnd.Sub(time.Unix(0, result.Metrics.WorkerSentResultsNanos))
+			return result, jobDispatchLatency, resultReturnLatency, nil
 
 		case protocol.FAILED:
-			return "", fmt.Errorf("worker reported failure")
+			return nil, 0, 0, fmt.Errorf("worker reported failure")
 
 		default:
 			log.Println("unknown command:", cmd)

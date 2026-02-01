@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"time"
 	"unsafe"
 
 	"comp8005/internal/protocol"
@@ -35,6 +36,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+
 	address := fmt.Sprintf("%s:%d", args.ControllerHost, args.ControllerPort)
 	conn, err := net.Dial(protocol.TCP, address)
 	if err != nil {
@@ -55,9 +57,13 @@ func main() {
 		log.Printf("error occurred during receiving job")
 	}
 
+	jobReceiveEnd := time.Now()
+
+	var totalCrackTime time.Duration
+	crackStart := time.Now()
 	var password string
 
-	indices := []int{0} // starts at "A"
+	indices := []int{0}
 
 	for {
 		// build candidate
@@ -67,7 +73,7 @@ func main() {
 		}
 		test := string(buf)
 
-		fmt.Println("Next Password: %s", test)
+		fmt.Printf("Next Password: %s\n", test)
 		found, err := crackPassword(job, test)
 		if err != nil {
 			fmt.Fprintln(conn, protocol.FAILED)
@@ -76,6 +82,7 @@ func main() {
 		}
 
 		if found {
+			totalCrackTime = time.Since(crackStart)
 			password = test
 			break
 		}
@@ -83,9 +90,20 @@ func main() {
 		indices = nextPassword(indices)
 	}
 
-	fmt.Printf("Password Found %s\n", password)
+	resultsSentStart := time.Now()
+	result := protocol.CrackResult{
+		Password: password,
+		Metrics: protocol.WorkerMetrics{
+			TotalCrackingTimeNanos: totalCrackTime.Nanoseconds(),
+			WorkerReceiveJobNanos:  jobReceiveEnd.UnixNano(),
+			WorkerSentResultsNanos: resultsSentStart.UnixNano(),
+		},
+	}
+
+	log.Printf("Password Found %s\n", password)
 	fmt.Fprintln(conn, protocol.SUCCESS)
-	fmt.Fprintln(conn, password)
+	encoder := json.NewEncoder(conn)
+	encoder.Encode(result)
 
 }
 
@@ -119,6 +137,5 @@ func nextPassword(p []int) []int {
 		pos--
 	}
 
-	// overflow → increase length (AA, AAA, etc.)
 	return make([]int, len(p)+1)
 }
