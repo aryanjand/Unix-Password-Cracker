@@ -54,7 +54,8 @@ func validateControllerArgs(args *ControllerArgs) error {
 
 func ParseWorkerFlags() (*WorkerArgs, error) {
 	port := flag.Int("p", 0, "server port")
-	controller := flag.String("p", "", "server hostname")
+	controller := flag.String("c", "", "server hostname")
+	flag.Parse()
 
 	args := &WorkerArgs{
 		ControllerPort: *port,

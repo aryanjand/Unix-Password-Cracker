@@ -65,6 +65,7 @@ func parseShadowLine(line string) (*CrackingJob, error) {
 
 	username := fields[0]
 	fullHash := fields[1]
+	fmt.Println(fields)
 
 	// Locked / disabled accounts
 	if fullHash == "!" || fullHash == "*" {
