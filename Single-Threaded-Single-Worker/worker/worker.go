@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"os"
 	"time"
 	"unsafe"
 
@@ -32,31 +33,52 @@ func main() {
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 
 	args, err := utils.ParseWorkerFlags()
-
+	log.Printf("Parsed worker args: host=%s port=%d", args.ControllerHost, args.ControllerPort)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	address := fmt.Sprintf("%s:%d", args.ControllerHost, args.ControllerPort)
+	log.Printf("Connecting to controller at %s", address)
 	conn, err := net.Dial(protocol.TCP, address)
 	if err != nil {
 		log.Fatal("connect error:", err)
 	}
-	defer conn.Close()
+	// defer conn.Close()
+	log.Printf("Connected to controller")
 
-	fmt.Fprintln(conn, protocol.IDLE)
-	log.Printf("sent %s", protocol.IDLE)
+	encoder := json.NewEncoder(conn)
+	msg := *&protocol.WorkerMessage{
+		Status: protocol.IDLE,
+	}
 
-	fmt.Fprintln(conn, protocol.READY)
-	log.Printf("sent %s", protocol.READY)
+	if err := encoder.Encode(msg); err != nil {
+		log.Printf("❌ Failed to → Sent %s", protocol.IDLE)
+		return
+	}
+	log.Printf("→ Sent %s", protocol.IDLE)
+
+	msg = *&protocol.WorkerMessage{
+		Status: protocol.READY,
+	}
+	if err := encoder.Encode(msg); err != nil {
+		log.Printf("❌ Failed to → Sent %s", protocol.READY)
+		return
+	}
+	log.Printf("→ Sent %s", protocol.READY)
 
 	var job *protocol.CrackingJob
 	decoder := json.NewDecoder(conn)
 	if err := decoder.Decode(&job); err != nil {
-		fmt.Fprintln(conn, protocol.FAILED)
+		msg = protocol.WorkerMessage{Status: protocol.FAILED}
+		if err := encoder.Encode(msg); err != nil {
+			log.Printf("❌ Failed to send FAILED: %v", err)
+			return
+		}
+		log.Printf("→ Sent %s", protocol.FAILED)
 		log.Printf("error occurred during receiving job")
 	}
-
+	log.Printf("← Receiving cracking job")
 	jobReceiveEnd := time.Now()
 
 	var totalCrackTime time.Duration
@@ -76,13 +98,19 @@ func main() {
 		fmt.Printf("Next Password: %s\n", test)
 		found, err := crackPassword(job, test)
 		if err != nil {
-			fmt.Fprintln(conn, protocol.FAILED)
+			msg = protocol.WorkerMessage{Status: protocol.FAILED}
+			if err := encoder.Encode(msg); err != nil {
+				log.Printf("❌ Failed to send FAILED: %v", err)
+				return
+			}
+			log.Printf("→ Sent %s", protocol.FAILED)
 			log.Printf("error occurred during cracking password")
 			continue
 		}
 
 		if found {
 			totalCrackTime = time.Since(crackStart)
+			log.Printf("Password found %s\n", test)
 			password = test
 			break
 		}
@@ -100,10 +128,37 @@ func main() {
 		},
 	}
 
-	log.Printf("Password Found %s\n", password)
-	fmt.Fprintln(conn, protocol.SUCCESS)
-	encoder := json.NewEncoder(conn)
-	encoder.Encode(result)
+	log.Printf("Result ready: password=%q crackTime=%v",
+		result.Password,
+		time.Duration(result.Metrics.TotalCrackingTimeNanos),
+	)
+
+	log.Printf("→ Sending %s", protocol.SUCCESS)
+	msg = protocol.WorkerMessage{Status: protocol.SUCCESS}
+	if err := encoder.Encode(msg); err != nil {
+		log.Printf("❌ Failed to send SUCCESS: %v", err)
+		return
+	}
+
+	log.Printf("→ Sending result payload")
+	if err := encoder.Encode(result); err != nil {
+		log.Printf("❌ Failed to send result: %v", err)
+		return
+	}
+
+	log.Printf("✓ Result sent successfully")
+
+	log.Printf("Waiting for shutdown")
+	conn.SetReadDeadline(time.Now().Add(30 * time.Second))
+	if err := decoder.Decode(&msg); err != nil {
+		log.Printf("Shutdown not received: %v", err)
+		os.Exit(1)
+	}
+	if msg.Status == protocol.SHUTDOWN {
+		log.Printf("Shutdown received")
+		os.Exit(0)
+	}
+	os.Exit(1)
 
 }
 

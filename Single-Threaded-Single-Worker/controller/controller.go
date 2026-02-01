@@ -1,13 +1,11 @@
 package main
 
 import (
-	"bufio"
 	"encoding/json"
 	"fmt"
 	"log"
 	"net"
 	"os"
-	"strings"
 	"time"
 
 	"comp8005/internal/protocol"
@@ -50,12 +48,13 @@ func main() {
 	}
 	defer ln.Close()
 
-	log.Println("Controller ready, waiting for workers on ", address)
+	log.Printf("Listening for workers on %s", address)
 
 	conn, err := ln.Accept()
 	if err != nil {
 		log.Println("accept error:", err)
 	}
+	log.Printf("Worker connected from %s", conn.RemoteAddr())
 	defer conn.Close()
 
 	result, dispatchLatency, returnLatency, err := handleWorkerConnection(conn, job)
@@ -84,13 +83,21 @@ func main() {
 		time.Duration(result.Metrics.TotalCrackingTimeNanos))
 	fmt.Printf("Result return latency:    %v\n", returnLatency)
 	fmt.Printf("End-to-end runtime:       %v\n", endToEnd)
+
+	encoder := json.NewEncoder(conn)
+	msg := protocol.WorkerMessage{Status: protocol.SHUTDOWN}
+	log.Printf("→ Sending Shutdown")
+	if err := encoder.Encode(msg); err != nil {
+		log.Printf("❌ Failed to send SHUTDOWN: %v", err)
+		return
+	}
+	log.Printf("Shutdown Sent")
 	os.Exit(0)
 
 }
 
 func handleWorkerConnection(conn net.Conn, job *protocol.CrackingJob) (*protocol.CrackResult, time.Duration, time.Duration, error) {
 
-	reader := bufio.NewReader(conn)
 	encoder := json.NewEncoder(conn)
 	decoder := json.NewDecoder(conn)
 	conn.SetReadDeadline(time.Now().Add(30 * time.Second))
@@ -101,43 +108,45 @@ func handleWorkerConnection(conn net.Conn, job *protocol.CrackingJob) (*protocol
 		resultsReceiveEnd time.Time
 	)
 	for {
-
-		line, err := reader.ReadString('\n')
-		if err != nil {
-			return nil, 0, 0, err
+		var msg protocol.WorkerMessage
+		if err := decoder.Decode(&msg); err != nil {
+			log.Fatal(err)
 		}
 
-		cmd := strings.TrimSpace(line)
+		cmd := msg.Status
+		log.Printf("← Received %s", cmd)
 
 		switch cmd {
 
 		case protocol.IDLE:
 			conn.SetReadDeadline(time.Time{})
-			continue
 
 		case protocol.READY:
-			log.Println(("Sending cracking job"))
+			log.Printf("→ Sending cracking job to worker")
 			jobSentStart = time.Now()
 			if err := encoder.Encode(job); err != nil {
 				return nil, 0, 0, err
 			}
 
 		case protocol.SUCCESS:
+			log.Printf("← Receiving cracking result")
 			if err := decoder.Decode(&result); err != nil {
 				return nil, 0, 0, err
 			}
+			log.Printf("✓ Result received (password=%q)", result.Password)
+
 			resultsReceiveEnd = time.Now()
 			jobDispatchLatency := time.Unix(0, result.Metrics.WorkerReceiveJobNanos).Sub(jobSentStart)
 			resultReturnLatency := resultsReceiveEnd.Sub(time.Unix(0, result.Metrics.WorkerSentResultsNanos))
 			return result, jobDispatchLatency, resultReturnLatency, nil
 
 		case protocol.FAILED:
+			log.Printf("❌ Worker reported FAILURE")
 			return nil, 0, 0, fmt.Errorf("worker reported failure")
 
 		default:
-			log.Println("unknown command:", cmd)
+			log.Printf("⚠ Unknown command from worker: %q", cmd)
 		}
-
 	}
 
 }

@@ -9,12 +9,13 @@ import (
 )
 
 const (
-	TCP     = "tcp"
-	IDLE    = "IDLE"
-	BUSY    = "BUSY"
-	READY   = "READY"
-	FAILED  = "FAILED"
-	SUCCESS = "SUCCESS"
+	TCP      = "tcp"
+	IDLE     = "IDLE"
+	BUSY     = "BUSY"
+	READY    = "READY"
+	FAILED   = "FAILED"
+	SUCCESS  = "SUCCESS"
+	SHUTDOWN = "SHUTDOWN"
 )
 
 type CrackingJob struct {
@@ -33,6 +34,10 @@ type WorkerMetrics struct {
 type CrackResult struct {
 	Password string        `json:"password"`
 	Metrics  WorkerMetrics `json:"metrics"`
+}
+
+type WorkerMessage struct {
+	Status string `json:"status"`
 }
 
 const (
