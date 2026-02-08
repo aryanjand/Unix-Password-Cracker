@@ -3,7 +3,6 @@ package protocol
 import (
 	"bufio"
 	"fmt"
-	"log"
 	"os"
 	"strings"
 )
@@ -40,11 +39,6 @@ type WorkerMessage struct {
 	Status string `json:"status"`
 }
 
-const (
-	shadowFieldCount = 9
-	shadowDelimiter  = ":"
-)
-
 func FindUserInShadow(filePath string, username string) (*CrackingJob, error) {
 	file, err := os.Open(filePath)
 	if err != nil {
@@ -53,11 +47,9 @@ func FindUserInShadow(filePath string, username string) (*CrackingJob, error) {
 	defer file.Close()
 
 	scanner := bufio.NewScanner(file)
-
 	for scanner.Scan() {
 		entry, err := parseShadowLine(scanner.Text())
 		if err != nil {
-			log.Println("Skipping line:", err)
 			continue
 		}
 
@@ -67,21 +59,20 @@ func FindUserInShadow(filePath string, username string) (*CrackingJob, error) {
 	}
 
 	if err := scanner.Err(); err != nil {
-		return nil, fmt.Errorf("error reading shadow file: %w", err)
+		return nil, fmt.Errorf("reading shadow file failed: %w", err)
 	}
 
 	return nil, fmt.Errorf("user %q not found in shadow file", username)
 }
 
 func parseShadowLine(line string) (*CrackingJob, error) {
-	fields := strings.Split(line, shadowDelimiter)
-	if len(fields) != shadowFieldCount {
+	fields := strings.Split(line, ":")
+	if len(fields) < 2 {
 		return nil, fmt.Errorf("invalid shadow line format")
 	}
 
 	username := fields[0]
 	fullHash := fields[1]
-	fmt.Println(fields)
 
 	// Locked / disabled accounts
 	if fullHash == "!" || fullHash == "*" {
@@ -95,10 +86,6 @@ func parseShadowLine(line string) (*CrackingJob, error) {
 
 	// Remove trailing hash part to get the setting
 	lastDollar := strings.LastIndex(fullHash, "$")
-	if lastDollar == -1 {
-		return nil, fmt.Errorf("invalid crypt format for user %s", username)
-	}
-
 	setting := fullHash[:lastDollar]
 
 	return &CrackingJob{
