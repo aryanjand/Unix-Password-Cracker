@@ -1,0 +1,15 @@
+# md5
+aryan:$1$/3H4qEE/$VIIu/Ei.p6nlAFnq3VccM.:19000:0:99999:7:::
+
+# yescrypt
+aryan:$y$j9T$qbCiQs0Jpwddn6JTMe5QE.$Oa1FhOeTDPpA/lKHRIAgMwKOmVlusFhmqA./kCt8DN9:19000:0:99999:7:::
+
+# bcrypt
+aryan:$2b$05$8ghRQzt5qJAhc3hKhdClhOCtw6iQkBF6upvwBpxMTS5bx9GGIBjim:19000:0:99999:7:::
+
+# sha512
+aryan:$6$RgN5V0mz4Y051Mp8$zkj3ccvn5M3P7qkGmePCS2Ut9Yh0QCNNqKSz9jQLhLJ4o.eiWUcQgCf/XuAwMWUSyPcFf/d8ayhQrcZqvN8y8.:19000:0:99999:7:::
+
+# sha256
+aryan:$5$uAkUP6an1Ajsz/Pe$rGw78.wAHjXXM7Jgftk4CJhi2iN.X.Tr0/rby5mbtB1:19000:0:99999:7:::
+
