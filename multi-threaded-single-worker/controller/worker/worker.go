@@ -14,6 +14,7 @@ import (
 	"log"
 	"net"
 	"os"
+	"sync"
 	"time"
 	"unsafe"
 
@@ -34,36 +35,48 @@ var charset = []rune("ABCDEFGHIJKLMNOPQRSTUVWXYZ" + "abcdefghijklmnopqrstuvwxyz"
 
 func main() {
 
+	var wg sync.WaitGroup
 	log := NewLogger("[Worker]")
-
+	threads := flag.Int("t", 0, "number of threads")
 	host := flag.String("c", "", "controller host")
 	port := flag.Int("p", 0, "controller port")
+
 	flag.Parse()
-	if *host == "" || *port <= 0 {
-		log.Fatal("Usage: worker -c HOST -p PORT")
+	if *host == "" || *port <= 0 || *threads <= 0 {
+		flag.Usage()
+		log.Fatal("Usage: worker -c HOST -p PORT -t THREADS")
 	}
 
-	address := fmt.Sprintf("127.0.0.1:%d", *port)
+	address := fmt.Sprintf("localhost:%d", *port)
 	conn, err := net.Dial(protocol.TCP, address)
 	if err != nil {
 		log.Fatal("connect error:", err)
 	}
 	defer conn.Close()
-	log.Println("Connected to controller")
+	log.Println("connected to controller")
+
+	writeCh := make(chan WriteMsg, 4)
+	jobCh := make(chan *protocol.CrackingJob, 1)
 
 	encoder := json.NewEncoder(conn)
 	decoder := json.NewDecoder(conn)
+	wg.Add(2)
 
-	encoder.Encode(protocol.WorkerMessage{Status: protocol.READY})
-	log.Printf("→ Sent %s", protocol.READY)
+	go func() {
+		defer wg.Done()
+		writeRequests(encoder, writeCh, log)
+	}()
 
-	var job *protocol.CrackingJob
-	if err := decoder.Decode(&job); err != nil {
-		encoder.Encode(protocol.WorkerMessage{Status: protocol.FAILED})
-		log.Printf("→ Sent %s", protocol.FAILED)
-		log.Fatalf("failed to receive job: %v", err)
-	}
-	log.Printf("Receiving job for user %s", job.Username)
+	go func() {
+		defer wg.Done()
+		readRequests(decoder, writeCh, jobCh, log)
+	}()
+
+	writeCh <- protocol.WorkerMessage{Status: protocol.READY}
+	log.Printf("-> sent %s", protocol.READY)
+
+	job := <-jobCh
+	log.Printf("job received: id=%d user=%s", job.Id, job.Username)
 	jobReceiveEnd := time.Now()
 
 	var totalCrackTime time.Duration
@@ -80,7 +93,7 @@ func main() {
 		}
 		test := string(buf)
 
-		fmt.Printf("Next Password: %s\n", test)
+		// fmt.Printf("Next Password: %s\n", test)
 		found, err := crackPassword(job, test)
 		if err != nil {
 
@@ -110,26 +123,15 @@ func main() {
 		},
 	}
 
-	log.Printf("Result ready: password=%q crackTime=%v",
-		result.Password,
-		time.Duration(result.Metrics.TotalCrackingTimeNanos),
-	)
+	log.Printf("result ready: password=%q crackTime=%v", result.Password, time.Duration(result.Metrics.TotalCrackingTimeNanos))
 
-	encoder.Encode(protocol.WorkerMessage{Status: protocol.SUCCESS})
-	encoder.Encode(result)
-	log.Println("Result sent")
+	log.Println("sending result")
+	writeCh <- protocol.WorkerMessage{Status: protocol.SUCCESS}
+	writeCh <- result
+	close(writeCh)
 
-	// Wait for SHUTDOWN
-	var msg protocol.WorkerMessage
-	conn.SetReadDeadline(time.Now().Add(30 * time.Second))
-	if err := decoder.Decode(&msg); err != nil {
-		log.Println("Shutdown not received")
-		os.Exit(1)
-	}
-	if msg.Status == protocol.SHUTDOWN {
-		log.Println("Shutdown received, exiting")
-	}
-
+	wg.Wait()
+	os.Exit(0)
 }
 
 func crackPassword(job *protocol.CrackingJob, candidate string) (bool, error) {

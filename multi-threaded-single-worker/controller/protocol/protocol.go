@@ -8,12 +8,17 @@ import (
 )
 
 const (
-	TCP      = "tcp"
-	IDLE     = "IDLE"
-	BUSY     = "BUSY"
+	TCP = "tcp"
+	// liveness states
+	IDLE    = "IDLE"
+	STUCK   = "STUCK"
+	ALIVE   = "ALIVE"
+	WORKING = "WORKING"
+	// working states
 	READY    = "READY"
 	FAILED   = "FAILED"
 	SUCCESS  = "SUCCESS"
+	SENT_JOB = "SENT_JOB"
 	SHUTDOWN = "SHUTDOWN"
 )
 
@@ -37,6 +42,13 @@ type CrackResult struct {
 
 type WorkerMessage struct {
 	Status string `json:"status"`
+}
+
+type HeartbeatResponse struct {
+	DeltaTested   int64 `json:"delta_tested"`
+	TotalTested   int64 `json:"total_tested"`
+	ThreadsActive int64 `json:"threads_active"`
+	CurrentRate   int64 `json:"current_rate"`
 }
 
 func FindUserInShadow(filePath string, username string) (*CrackingJob, error) {

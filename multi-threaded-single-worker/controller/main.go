@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"log"
 	"net"
-	"net/http"
 	_ "net/http/pprof"
 	"os"
+	"sync"
 	"time"
 
 	"controller/protocol"
@@ -26,19 +26,19 @@ func NewLogger(prefix string) *Logger {
 
 func main() {
 	start := time.Now()
+	var wg sync.WaitGroup
 	log := NewLogger("[Controller]")
+
 	port := flag.Int("p", 0, "port to bind")
 	username := flag.String("u", "", "username")
 	shadowFile := flag.String("f", "", "shadow file path")
-	flag.Parse()
-	if *port <= 0 || *shadowFile == "" || *username == "" {
-		log.Fatal("Usage: controller -p PORT -f SHADOW_FILE -u USERNAME")
-	}
+	heartbeats := flag.Int("b", 0, "heartbeat interval in seconds")
 
-	go func() {
-		log.Println("pprof listening on :3000")
-		http.ListenAndServe("localhost:3000", nil)
-	}()
+	flag.Parse()
+	if *port <= 0 || *heartbeats <= 0 || *shadowFile == "" || *username == "" {
+		flag.Usage()
+		log.Fatal("Usage: controller -p PORT -f SHADOW_FILE -u USERNAME -b HEARTBEAT_SECONDS")
+	}
 
 	parseStart := time.Now()
 	job, err := protocol.FindUserInShadow(*shadowFile, *username)
@@ -67,30 +67,52 @@ func main() {
 	}
 	log.Printf("Worker connected from %s", conn.RemoteAddr())
 
+	writeCh := make(chan WriteMsg)
+	resultCh := make(chan ResultMsg)
+
 	encoder := json.NewEncoder(conn)
-	result, metrics, err := handleWorkerConnection(conn, job, log)
-	if err != nil {
-		log.Fatal(err)
+	decoder := json.NewDecoder(conn)
+
+	wg.Add(2)
+	go func() {
+		defer wg.Done()
+		writeRequests(encoder, *heartbeats, writeCh, log)
+	}()
+
+	go func() {
+		defer wg.Done()
+		readRequests(decoder, *job, writeCh, resultCh, log)
+	}()
+
+	result, ok := <-resultCh
+	if !ok {
+		log.Fatal("result channel closed")
+	}
+
+	if result.Err != nil {
+		log.Fatal(result.Err)
 	}
 
 	endToEnd := time.Since(start)
 	fmt.Println("\n==== Cracking Results ====")
-	if result.Password != "" {
-		fmt.Println("Password Found:", result.Password)
+	if result.Result.Password != "" {
+		fmt.Println("Password Found:", result.Result.Password)
 	} else {
 		fmt.Println("Password Not Found")
 	}
 
 	fmt.Println("\n==== Metrics ====")
 	fmt.Printf("Controller parse time:    %v\n", parseTime)
-	fmt.Printf("Job dispatch latency:     %v\n", metrics.JobDispatch)
-	fmt.Printf("Worker cracking time:     %v\n", time.Duration(result.Metrics.TotalCrackingTimeNanos))
-	fmt.Printf("Result return latency:    %v\n", metrics.ResultReturn)
+	fmt.Printf("Job dispatch latency:     %v\n", result.Metrics.JobDispatch)
+	fmt.Printf("Worker cracking time:     %v\n", time.Duration(result.Result.Metrics.TotalCrackingTimeNanos))
+	fmt.Printf("Result return latency:    %v\n", result.Metrics.ResultReturn)
 	fmt.Printf("End-to-end runtime:       %v\n", endToEnd)
 
-	encoder.Encode(protocol.WorkerMessage{Status: protocol.SHUTDOWN})
-	log.Printf("Shutdown Sent")
+	log.Println("sending shutdown")
+	writeCh <- protocol.WorkerMessage{Status: protocol.SHUTDOWN}
+	close(writeCh)
 
+	wg.Wait()
 	conn.Close()
 	os.Exit(0)
 }

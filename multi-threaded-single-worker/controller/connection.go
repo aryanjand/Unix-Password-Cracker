@@ -3,11 +3,18 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"net"
 	"time"
 
 	"controller/protocol"
 )
+
+type WriteMsg any
+
+type ResultMsg struct {
+	Result  *protocol.CrackResult
+	Metrics *Metrics
+	Err     error
+}
 
 type Metrics struct {
 	JobDispatch  time.Duration
@@ -15,22 +22,45 @@ type Metrics struct {
 	ResultReturn time.Duration
 }
 
-func handleWorkerConnection(conn net.Conn, job *protocol.CrackingJob, log *Logger) (*protocol.CrackResult, Metrics, error) {
+func writeRequests(encoder *json.Encoder, interval int, writeCh <-chan WriteMsg, log *Logger) {
+	ticker := time.NewTicker(time.Duration(interval) * time.Second)
+	defer ticker.Stop()
 
-	encoder := json.NewEncoder(conn)
-	decoder := json.NewDecoder(conn)
+	for {
+		select {
+		case msg, ok := <-writeCh:
+			if !ok {
+				log.Println("write channel closed, writer exiting")
+				return
+			}
+			if err := encoder.Encode(msg); err != nil {
+				log.Printf("write error: %v", err)
+				return
+			}
 
-	conn.SetReadDeadline(time.Now().Add(30 * time.Second))
+		case <-ticker.C:
+			hb := protocol.WorkerMessage{Status: protocol.ALIVE}
+			if err := encoder.Encode(hb); err != nil {
+				log.Printf("heartbeat send failed: %v", err)
+				return
+			}
+			log.Println("heartbeat sent")
+		}
+	}
+}
 
-	var result *protocol.CrackResult
-	var jobSentTime, resultReceivedTime time.Time
+func readRequests(decoder *json.Decoder, job protocol.CrackingJob, writeCh chan<- WriteMsg, resultCh chan<- ResultMsg, log *Logger) {
+	var jobSentTime time.Time
 
 	for {
 		var msg protocol.WorkerMessage
 		if err := decoder.Decode(&msg); err != nil {
-			return nil, Metrics{}, fmt.Errorf("decode worker msg: %w", err)
+			resultCh <- ResultMsg{
+				Err: fmt.Errorf("decode worker message: %w", err),
+			}
+			return
 		}
-		conn.SetReadDeadline(time.Time{})
+
 		switch msg.Status {
 
 		case protocol.IDLE:
@@ -38,30 +68,59 @@ func handleWorkerConnection(conn net.Conn, job *protocol.CrackingJob, log *Logge
 
 		case protocol.READY:
 			jobSentTime = time.Now()
-			log.Printf("→ Sending cracking job")
-			if err := encoder.Encode(job); err != nil {
-				return nil, Metrics{}, err
-			}
+			log.Printf("-> enqueue cracking job")
+			writeCh <- protocol.WorkerMessage{Status: protocol.SENT_JOB}
+			writeCh <- job
 
 		case protocol.SUCCESS:
-			log.Printf("← Receiving cracking result")
+			log.Printf("<- receiving cracking result")
+
+			var result protocol.CrackResult
 			if err := decoder.Decode(&result); err != nil {
-				return nil, Metrics{}, err
+				resultCh <- ResultMsg{
+					Err: fmt.Errorf("decode result: %w", err),
+				}
+				return
 			}
-			resultReceivedTime = time.Now()
+
 			metrics := Metrics{
-				JobDispatch:  resultReceivedTime.Sub(jobSentTime),
+				JobDispatch:  time.Since(jobSentTime),
 				WorkerCrack:  time.Duration(result.Metrics.TotalCrackingTimeNanos),
-				ResultReturn: resultReceivedTime.Sub(time.Unix(0, result.Metrics.WorkerSentResultsNanos)),
+				ResultReturn: time.Since(time.Unix(0, result.Metrics.WorkerSentResultsNanos)),
 			}
-			log.Printf("✓ Result received: password=%q", result.Password)
-			return result, metrics, nil
+
+			resultCh <- ResultMsg{
+				Result:  &result,
+				Metrics: &metrics,
+			}
+			return
 
 		case protocol.FAILED:
-			return nil, Metrics{}, fmt.Errorf("worker reported failure")
+			resultCh <- ResultMsg{
+				Err: fmt.Errorf("worker reported failure"),
+			}
+			return
+
+		case protocol.ALIVE:
+			var hb protocol.HeartbeatResponse
+			if err := decoder.Decode(&hb); err != nil {
+				resultCh <- ResultMsg{
+					Err: fmt.Errorf("decode heartbeat: %w", err),
+				}
+				return
+			}
+
+			log.Printf(
+				"heartbeat | delta: %-10d | total: %-12d | threads: %-3d | rate: %d/sec",
+				hb.DeltaTested,
+				hb.TotalTested,
+				hb.ThreadsActive,
+				hb.CurrentRate,
+			)
 
 		default:
-			log.Printf("⚠ Unknown worker command: %q", msg.Status)
+			log.Printf("⚠ unknown worker status: %q", msg.Status)
+
 		}
 	}
 }
