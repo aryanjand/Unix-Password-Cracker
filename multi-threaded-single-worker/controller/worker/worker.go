@@ -36,7 +36,7 @@ var charset = []rune("ABCDEFGHIJKLMNOPQRSTUVWXYZ" + "abcdefghijklmnopqrstuvwxyz"
 
 func main() {
 
-	var wg sync.WaitGroup
+	// Parse arguments
 	log := NewLogger("[Worker]")
 	threads := flag.Int("t", 0, "number of threads")
 	host := flag.String("c", "", "controller host")
@@ -48,6 +48,7 @@ func main() {
 		log.Fatal("Usage: worker -c HOST -p PORT -t THREADS")
 	}
 
+	// Connect to the controller
 	address := fmt.Sprintf("localhost:%d", *port)
 	conn, err := net.Dial(protocol.TCP, address)
 	if err != nil {
@@ -56,15 +57,17 @@ func main() {
 	defer conn.Close()
 	log.Println("connected to controller")
 
+	// Add Go routines to read and write to sockets (Handling Heartbeat request)
+	var wg sync.WaitGroup
 	writeCh := make(chan WriteMsg, 4)
 	jobCh := make(chan *protocol.CrackingJob, 1)
+
+	var delta_tested int64
+	var total_tested int64
 
 	encoder := json.NewEncoder(conn)
 	decoder := json.NewDecoder(conn)
 	wg.Add(2)
-
-	var delta_tested int64
-	var total_tested int64
 
 	go func() {
 		defer wg.Done()
@@ -80,49 +83,84 @@ func main() {
 	log.Printf("-> sent %s", protocol.READY)
 
 	job := <-jobCh
-	log.Printf("job received: id=%d user=%s", job.Id, job.Username)
+	log.Println("job received:", job.Id, job.Username)
+	log.Printf("\tjob id= %d", job.Id)
+	log.Printf("\tjob user= %s", job.Username)
+
 	jobReceiveEnd := time.Now()
+
+	// Crack passwords
+	done := make(chan struct{})
+	resultCh := make(chan ResultMsg, 1)
+	jobs := make(chan string, *threads)
 
 	var totalCrackTime time.Duration
 	crackStart := time.Now()
-	var password string
 
-	indices := []int{0}
+	for i := 0; i < *threads; i++ {
+		wg.Add(1)
+		go func(id int) {
+			defer wg.Done()
 
-	for {
-		// build candidate
-		buf := make([]rune, len(indices))
-		for i, idx := range indices {
-			buf[i] = charset[idx]
-		}
-		test := string(buf)
+			for {
+				select {
+				case <-done:
+					return
+				case test, ok := <-jobs:
+					if !ok {
+						return
+					}
 
-		// fmt.Printf("Next Password: %s\n", test)
-		found, err := crackPassword(job, test)
+					found, err := crackPassword(job, test)
+					atomic.AddInt64(&delta_tested, 1)
+					atomic.AddInt64(&total_tested, 1)
 
-		atomic.AddInt64(&total_tested, 1)
-		atomic.AddInt64(&delta_tested, 1)
-		if err != nil {
+					if err != nil {
+						resultCh <- ResultMsg{Err: err}
+						return
+					}
 
-			encoder.Encode(protocol.WorkerMessage{Status: protocol.FAILED})
-			log.Printf("→ Sent %s", protocol.FAILED)
-			log.Printf("error occurred during cracking password")
-			continue
-		}
-
-		if found {
-			totalCrackTime = time.Since(crackStart)
-			log.Printf("Password found %s\n", test)
-			password = test
-			break
-		}
-
-		indices = nextPassword(indices)
+					if found {
+						resultCh <- ResultMsg{Found: test}
+						close(done)
+						return
+					}
+				}
+			}
+		}(i)
 	}
 
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		indices := []int{0}
+
+		for {
+			select {
+			case <-done:
+				close(jobs)
+				return
+			default:
+				buf := make([]rune, len(indices))
+				for i, idx := range indices {
+					buf[i] = charset[idx]
+				}
+				jobs <- string(buf)
+				indices = nextPassword(indices)
+			}
+		}
+	}()
+
+	res := <-resultCh
+	totalCrackTime = time.Since(crackStart)
+	if res.Err != nil {
+		log.Fatal("crack failed:", res.Err)
+	}
+
+	log.Printf("password found: %s", res.Found)
 	resultsSentStart := time.Now()
 	result := protocol.CrackResult{
-		Password: password,
+		Password: res.Found,
 		Metrics: protocol.WorkerMetrics{
 			TotalCrackingTimeNanos: totalCrackTime.Nanoseconds(),
 			WorkerReceiveJobNanos:  jobReceiveEnd.UnixNano(),
@@ -131,7 +169,6 @@ func main() {
 	}
 
 	log.Printf("result ready: password=%q crackTime=%v", result.Password, time.Duration(result.Metrics.TotalCrackingTimeNanos))
-
 	log.Println("sending result")
 	writeCh <- protocol.WorkerMessage{Status: protocol.SUCCESS}
 	writeCh <- result

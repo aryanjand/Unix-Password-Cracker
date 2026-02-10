@@ -17,6 +17,11 @@ type Metrics struct {
 	ResultReturn time.Duration
 }
 
+type ResultMsg struct {
+	Found string
+	Err   error
+}
+
 func writeRequests(encoder *json.Encoder, writeCh <-chan WriteMsg, log *Logger) {
 	for msg := range writeCh {
 		if err := encoder.Encode(msg); err != nil {
