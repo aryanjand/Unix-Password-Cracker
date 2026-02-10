@@ -45,10 +45,12 @@ func main() {
 	if err != nil {
 		log.Fatalf("failed to create job: %v", err)
 	}
+	job.Interval = *heartbeats
 	parseTime := time.Since(parseStart)
 
 	log.Printf("Job Created")
 	log.Printf("	Id: %d", job.Id)
+	log.Printf("	Interval: %d", job.Interval)
 	log.Printf("	Username: %s", job.Username)
 	log.Printf("	Settings: %s", job.Setting)
 

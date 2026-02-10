@@ -15,6 +15,7 @@ import (
 	"net"
 	"os"
 	"sync"
+	"sync/atomic"
 	"time"
 	"unsafe"
 
@@ -62,6 +63,9 @@ func main() {
 	decoder := json.NewDecoder(conn)
 	wg.Add(2)
 
+	var delta_tested int64
+	var total_tested int64
+
 	go func() {
 		defer wg.Done()
 		writeRequests(encoder, writeCh, log)
@@ -69,7 +73,7 @@ func main() {
 
 	go func() {
 		defer wg.Done()
-		readRequests(decoder, writeCh, jobCh, log)
+		readRequests(decoder, writeCh, jobCh, &delta_tested, &total_tested, log)
 	}()
 
 	writeCh <- protocol.WorkerMessage{Status: protocol.READY}
@@ -95,6 +99,9 @@ func main() {
 
 		// fmt.Printf("Next Password: %s\n", test)
 		found, err := crackPassword(job, test)
+
+		atomic.AddInt64(&total_tested, 1)
+		atomic.AddInt64(&delta_tested, 1)
 		if err != nil {
 
 			encoder.Encode(protocol.WorkerMessage{Status: protocol.FAILED})

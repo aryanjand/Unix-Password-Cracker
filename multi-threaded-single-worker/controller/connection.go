@@ -111,7 +111,7 @@ func readRequests(decoder *json.Decoder, job protocol.CrackingJob, writeCh chan<
 			}
 
 			log.Printf(
-				"heartbeat | delta: %-10d | total: %-12d | threads: %-3d | rate: %d/sec",
+				"heartbeat | delta: %-10d | total: %-12d | threads: %-3d | rate: %.2f/sec",
 				hb.DeltaTested,
 				hb.TotalTested,
 				hb.ThreadsActive,

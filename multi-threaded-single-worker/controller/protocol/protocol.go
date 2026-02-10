@@ -24,6 +24,7 @@ const (
 
 type CrackingJob struct {
 	Id       int
+	Interval int
 	Username string
 	Setting  string
 	FullHash string
@@ -45,10 +46,10 @@ type WorkerMessage struct {
 }
 
 type HeartbeatResponse struct {
-	DeltaTested   int64 `json:"delta_tested"`
-	TotalTested   int64 `json:"total_tested"`
-	ThreadsActive int64 `json:"threads_active"`
-	CurrentRate   int64 `json:"current_rate"`
+	DeltaTested   int64   `json:"delta_tested"`
+	TotalTested   int64   `json:"total_tested"`
+	ThreadsActive int64   `json:"threads_active"`
+	CurrentRate   float64 `json:"current_rate"`
 }
 
 func FindUserInShadow(filePath string, username string) (*CrackingJob, error) {
@@ -102,6 +103,7 @@ func parseShadowLine(line string) (*CrackingJob, error) {
 
 	return &CrackingJob{
 		Id:       1,
+		Interval: 0.0,
 		Username: username,
 		Setting:  setting,
 		FullHash: fullHash,
