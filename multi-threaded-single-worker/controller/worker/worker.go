@@ -43,13 +43,13 @@ func main() {
 	port := flag.Int("p", 0, "controller port")
 
 	flag.Parse()
-	if *host == "" || *port <= 0 || *threads <= 0 {
+	if *host == "" || *port <= 0 || *port > 65535 || *threads <= 0 {
 		flag.Usage()
 		log.Fatal("Usage: worker -c HOST -p PORT -t THREADS")
 	}
 
 	// Connect to the controller
-	address := fmt.Sprintf("localhost:%d", *port)
+	address := fmt.Sprintf("%s:%d", *host, *port)
 	conn, err := net.Dial(protocol.TCP, address)
 	if err != nil {
 		log.Fatal("connect error:", err)

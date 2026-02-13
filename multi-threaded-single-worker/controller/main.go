@@ -35,7 +35,7 @@ func main() {
 	heartbeats := flag.Int("b", 0, "heartbeat interval in seconds")
 
 	flag.Parse()
-	if *port <= 0 || *heartbeats <= 0 || *shadowFile == "" || *username == "" {
+	if *port <= 0 || *port > 65535 || *heartbeats <= 0 || *shadowFile == "" || *username == "" {
 		flag.Usage()
 		log.Fatal("Usage: controller -p PORT -f SHADOW_FILE -u USERNAME -b HEARTBEAT_SECONDS")
 	}
@@ -54,7 +54,7 @@ func main() {
 	log.Printf("	Username: %s", job.Username)
 	log.Printf("	Settings: %s", job.Setting)
 
-	address := fmt.Sprintf("localhost:%d", *port)
+	address := fmt.Sprintf(":%d", *port)
 	ln, err := net.Listen(protocol.TCP, address)
 	if err != nil {
 		log.Fatal(err)
