@@ -14,6 +14,19 @@ import (
 	"controller/protocol"
 )
 
+func humanDuration(d time.Duration) string {
+	abs := d.Abs()
+
+	switch {
+	case abs < time.Microsecond:
+		return fmt.Sprintf("%d ns", d.Nanoseconds())
+	case abs < time.Second:
+		return fmt.Sprintf("%.3f ms", float64(d.Microseconds())/1000)
+	default:
+		return fmt.Sprintf("%.3f s", d.Seconds())
+	}
+}
+
 type Logger struct {
 	*log.Logger
 }
@@ -40,6 +53,7 @@ func main() {
 		log.Fatal("Usage: controller -p PORT -f SHADOW_FILE -u USERNAME -b HEARTBEAT_SECONDS")
 	}
 
+	// Parsing shadow file
 	parseStart := time.Now()
 	job, err := protocol.FindUserInShadow(*shadowFile, *username)
 	if err != nil {
@@ -49,13 +63,14 @@ func main() {
 	parseTime := time.Since(parseStart)
 
 	log.Printf("Job Created")
-	log.Printf("	Id: %d", job.Id)
-	log.Printf("	Interval: %d", job.Interval)
-	log.Printf("	Username: %s", job.Username)
-	log.Printf("	Settings: %s", job.Setting)
+	log.Printf("\tId: %d", job.Id)
+	log.Printf("\tInterval: %d", job.Interval)
+	log.Printf("\tUsername: %s", job.Username)
+	log.Printf("\tSettings: %s", job.Setting)
+	log.Printf("\tFullHash: %s", job.FullHash)
 
 	address := fmt.Sprintf(":%d", *port)
-	ln, err := net.Listen(protocol.TCP, address)
+	ln, err := net.Listen("tcp", address)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -69,8 +84,8 @@ func main() {
 	}
 	log.Printf("Worker connected from %s", conn.RemoteAddr())
 
-	writeCh := make(chan WriteMsg)
 	resultCh := make(chan ResultMsg)
+	writeCh := make(chan protocol.Message)
 
 	encoder := json.NewEncoder(conn)
 	decoder := json.NewDecoder(conn)
@@ -95,24 +110,25 @@ func main() {
 		log.Fatal(result.Err)
 	}
 
+	log.Println("sending shutdown")
+	writeCh <- protocol.Message{Command: protocol.MsgShutdown}
+	close(writeCh)
+
 	endToEnd := time.Since(start)
+
 	fmt.Println("\n==== Cracking Results ====")
-	if result.Result.Password != "" {
-		fmt.Println("Password Found:", result.Result.Password)
+	if result.Password != "" {
+		fmt.Println("Password Found:", result.Password)
 	} else {
 		fmt.Println("Password Not Found")
 	}
 
 	fmt.Println("\n==== Metrics ====")
-	fmt.Printf("Controller parse time:    %v\n", parseTime)
-	fmt.Printf("Job dispatch latency:     %v\n", result.Metrics.JobDispatch)
-	fmt.Printf("Worker cracking time:     %v\n", time.Duration(result.Result.Metrics.TotalCrackingTimeNanos))
-	fmt.Printf("Result return latency:    %v\n", result.Metrics.ResultReturn)
-	fmt.Printf("End-to-end runtime:       %v\n", endToEnd)
-
-	log.Println("sending shutdown")
-	writeCh <- protocol.WorkerMessage{Status: protocol.SHUTDOWN}
-	close(writeCh)
+	fmt.Printf("Controller parse time:    %s\n", humanDuration(parseTime))
+	fmt.Printf("Job dispatch latency:     %s\n", humanDuration(result.Metrics.JobDispatch))
+	fmt.Printf("Worker cracking time:     %s\n", humanDuration(result.Metrics.WorkerCrack))
+	fmt.Printf("Result return latency:    %s\n", humanDuration(result.Metrics.ResultReturn))
+	fmt.Printf("End-to-end runtime:       %s\n", humanDuration(endToEnd))
 
 	wg.Wait()
 	conn.Close()

@@ -9,8 +9,6 @@ import (
 	"controller/protocol"
 )
 
-type WriteMsg any
-
 type Metrics struct {
 	JobDispatch  time.Duration
 	WorkerCrack  time.Duration
@@ -22,7 +20,7 @@ type ResultMsg struct {
 	Err   error
 }
 
-func writeRequests(encoder *json.Encoder, writeCh <-chan WriteMsg, log *Logger) {
+func writeRequests(encoder *json.Encoder, writeCh <-chan protocol.Message, log *Logger) {
 	for msg := range writeCh {
 		if err := encoder.Encode(msg); err != nil {
 			log.Printf("write error: %v", err)
@@ -31,49 +29,45 @@ func writeRequests(encoder *json.Encoder, writeCh <-chan WriteMsg, log *Logger) 
 	}
 }
 
-func readRequests(decoder *json.Decoder, writeCh chan<- WriteMsg, jobCh chan<- *protocol.CrackingJob, delta_tested *int64, total_tested *int64, log *Logger) {
+func readRequests(decoder *json.Decoder, writeCh chan<- protocol.Message, jobCh chan<- *protocol.CrackingJob, delta_tested *int64, total_tested *int64, log *Logger) {
 	var interval int
 	for {
-		var msg protocol.WorkerMessage
+		var msg protocol.Message
 		if err := decoder.Decode(&msg); err != nil {
 			log.Printf("decode error: %v", err)
 			close(writeCh)
 			return
 		}
 
-		log.Printf("<- command %s received", msg)
+		log.Printf("<- command %s received", msg.Command)
 
-		switch msg.Status {
+		switch msg.Command {
 
-		case protocol.ALIVE:
-
+		case protocol.MsgHeartbeat:
 			delta := atomic.LoadInt64(delta_tested)
 			total := atomic.LoadInt64(total_tested)
 			hb := protocol.HeartbeatResponse{
 				DeltaTested:   delta,
 				TotalTested:   total,
-				CurrentRate:   float64(delta) / float64(interval),
 				ThreadsActive: int64(runtime.NumGoroutine()),
+				CurrentRate:   float64(delta) / float64(interval),
 			}
 			atomic.StoreInt64(delta_tested, 0)
 			log.Println("sending heartbeat ->")
-			writeCh <- protocol.WorkerMessage{Status: protocol.ALIVE}
-			writeCh <- hb
+			hbResponse := protocol.Message{
+				Command:   protocol.MsgHeartbeat,
+				Heartbeat: &hb,
+			}
+			writeCh <- hbResponse
 
-		case protocol.SHUTDOWN:
+		case protocol.MsgShutdown:
 			return
 
-		case protocol.SENT_JOB:
-			var job protocol.CrackingJob
-			if err := decoder.Decode(&job); err != nil {
-				log.Printf("decode job error: %v", err)
-				close(writeCh)
-				return
-			}
-
+		case protocol.MsgJob:
+			job := msg.Job
 			log.Printf("<- received job %d", job.Id)
 			interval = job.Interval
-			jobCh <- &job
+			jobCh <- job
 		}
 	}
 }

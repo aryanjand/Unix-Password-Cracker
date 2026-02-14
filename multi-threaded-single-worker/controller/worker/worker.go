@@ -50,7 +50,7 @@ func main() {
 
 	// Connect to the controller
 	address := fmt.Sprintf("%s:%d", *host, *port)
-	conn, err := net.Dial(protocol.TCP, address)
+	conn, err := net.Dial("tcp", address)
 	if err != nil {
 		log.Fatal("connect error:", err)
 	}
@@ -59,7 +59,7 @@ func main() {
 
 	// Add Go routines to read and write to sockets (Handling Heartbeat request)
 	var wg sync.WaitGroup
-	writeCh := make(chan WriteMsg, 4)
+	writeCh := make(chan protocol.Message, 4)
 	jobCh := make(chan *protocol.CrackingJob, 1)
 
 	var delta_tested int64
@@ -79,15 +79,18 @@ func main() {
 		readRequests(decoder, writeCh, jobCh, &delta_tested, &total_tested, log)
 	}()
 
-	writeCh <- protocol.WorkerMessage{Status: protocol.READY}
-	log.Printf("-> sent %s", protocol.READY)
+	writeCh <- protocol.Message{Command: protocol.MsgReady}
+	log.Printf("-> sent %s", protocol.MsgReady)
 
 	job := <-jobCh
-	log.Println("job received:", job.Id, job.Username)
-	log.Printf("\tjob id= %d", job.Id)
-	log.Printf("\tjob user= %s", job.Username)
-
 	jobReceiveEnd := time.Now()
+
+	log.Println("job received:")
+	log.Printf("\tid: %d", job.Id)
+	log.Printf("\tinterval: %d", job.Interval)
+	log.Printf("\tusername: %s", job.Username)
+	log.Printf("\tsettings: %s", job.Setting)
+	log.Printf("\tfull hash: %s", job.FullHash)
 
 	// Crack passwords
 	done := make(chan struct{})
@@ -163,15 +166,17 @@ func main() {
 		Password: res.Found,
 		Metrics: protocol.WorkerMetrics{
 			TotalCrackingTimeNanos: totalCrackTime.Nanoseconds(),
-			WorkerReceiveJobNanos:  jobReceiveEnd.UnixNano(),
-			WorkerSentResultsNanos: resultsSentStart.UnixNano(),
+			WorkerReceiveJobNanos:  jobReceiveEnd,
+			WorkerSentResultsNanos: resultsSentStart,
 		},
 	}
 
 	log.Printf("result ready: password=%q crackTime=%v", result.Password, time.Duration(result.Metrics.TotalCrackingTimeNanos))
 	log.Println("sending result")
-	writeCh <- protocol.WorkerMessage{Status: protocol.SUCCESS}
-	writeCh <- result
+	writeCh <- protocol.Message{
+		Command: protocol.MsgResult,
+		Result:  &result,
+	}
 	close(writeCh)
 
 	wg.Wait()
