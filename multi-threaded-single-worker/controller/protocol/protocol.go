@@ -5,22 +5,28 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
 )
 
+type Command string
+
 const (
-	TCP = "tcp"
-	// liveness states
-	IDLE    = "IDLE"
-	STUCK   = "STUCK"
-	ALIVE   = "ALIVE"
-	WORKING = "WORKING"
-	// working states
-	READY    = "READY"
-	FAILED   = "FAILED"
-	SUCCESS  = "SUCCESS"
-	SENT_JOB = "SENT_JOB"
-	SHUTDOWN = "SHUTDOWN"
+	MsgReady     Command = "ready"
+	MsgJob       Command = "job"
+	MsgHeartbeat Command = "heartbeat"
+	MsgResult    Command = "result"
+	MsgError     Command = "error"
+	MsgShutdown  Command = "shutdown"
 )
+
+type Message struct {
+	Command Command `json:"command"`
+
+	Job       *CrackingJob       `json:"job,omitempty"`
+	Result    *CrackResult       `json:"result,omitempty"`
+	Heartbeat *HeartbeatResponse `json:"heartbeat,omitempty"`
+	Error     string             `json:"error,omitempty"`
+}
 
 type CrackingJob struct {
 	Id       int
@@ -30,19 +36,16 @@ type CrackingJob struct {
 	FullHash string
 }
 
-type WorkerMetrics struct {
-	TotalCrackingTimeNanos int64 `json:"total_cracking_time_ns"`
-	WorkerReceiveJobNanos  int64 `json:"worker_receive_job_ns"`
-	WorkerSentResultsNanos int64 `json:"worker_sent_results_ns"`
-}
-
+// CrackResult sent from Worker -> Controller
 type CrackResult struct {
 	Password string        `json:"password"`
 	Metrics  WorkerMetrics `json:"metrics"`
 }
 
-type WorkerMessage struct {
-	Status string `json:"status"`
+type WorkerMetrics struct {
+	TotalCrackingTimeNanos int64     `json:"total_cracking_time_ns"`
+	WorkerReceiveJobNanos  time.Time `json:"worker_receive_job_ns"`
+	WorkerSentResultsNanos time.Time `json:"worker_sent_results_ns"`
 }
 
 type HeartbeatResponse struct {
@@ -61,13 +64,13 @@ func FindUserInShadow(filePath string, username string) (*CrackingJob, error) {
 
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
-		entry, err := parseShadowLine(scanner.Text())
+		crackingJob, err := parseShadowLine(scanner.Text())
 		if err != nil {
 			continue
 		}
 
-		if entry.Username == username {
-			return entry, nil
+		if crackingJob.Username == username {
+			return crackingJob, nil
 		}
 	}
 
@@ -78,6 +81,7 @@ func FindUserInShadow(filePath string, username string) (*CrackingJob, error) {
 	return nil, fmt.Errorf("user %q not found in shadow file", username)
 }
 
+// Parse's Shadow line and creates CrackingJob
 func parseShadowLine(line string) (*CrackingJob, error) {
 	fields := strings.Split(line, ":")
 	if len(fields) < 2 {
