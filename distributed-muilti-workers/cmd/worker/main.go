@@ -1,11 +1,11 @@
 package main
 
 import (
-	"flag"
 	"fmt"
 	"net"
 	"os"
 
+	"github.com/aryanjand/Unix-Password-Cracker/internal/config"
 	"github.com/aryanjand/Unix-Password-Cracker/internal/protocol"
 	"github.com/aryanjand/Unix-Password-Cracker/internal/utils"
 	"github.com/aryanjand/Unix-Password-Cracker/internal/worker"
@@ -14,22 +14,13 @@ import (
 const MAX_JOBS = 1
 
 func main() {
-
-	// Parse arguments
 	log := utils.NewLogger("[Worker]")
-	port := flag.Int("p", 0, "controller port")
-	host := flag.String("c", "", "controller host")
-	threads := flag.Int("t", 0, "number of threads")
-	partition := flag.Int("s", 1, "partition size for password space")
-
-	flag.Parse()
-	if *host == "" || *port <= 0 || *partition <= 0 || *port > 65535 || *threads <= 0 {
-		flag.Usage()
-		log.Fatal("Usage: worker -c HOST -p PORT -t THREADS")
+	cfg, err := config.ParseWorker(os.Args[1:])
+	if err != nil {
+		log.Fatal(err)
 	}
 
-	// Connect to the controller
-	address := fmt.Sprintf("%s:%d", *host, *port)
+	address := fmt.Sprintf("%s:%d", cfg.ControllerHost, cfg.ControllerPort)
 	conn, err := net.Dial("tcp", address)
 
 	if err != nil {
@@ -61,7 +52,7 @@ func main() {
 		runner := worker.NewJobRunner(job)
 
 		// 4. Run using multi threading
-		result = runner.Run(*threads)
+		result = runner.Run(cfg.Threads)
 
 		if result != "" {
 			break
@@ -69,6 +60,5 @@ func main() {
 
 	}
 
-	fmt.Println("Result %s ", result)
-	os.Exit(0)
+	fmt.Printf("Result %s\n", result)
 }
