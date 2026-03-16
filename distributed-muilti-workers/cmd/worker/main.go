@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"time"
 
 	"github.com/aryanjand/Unix-Password-Cracker/internal/config"
 	"github.com/aryanjand/Unix-Password-Cracker/internal/protocol"
@@ -29,7 +30,7 @@ func main() {
 	defer conn.Close()
 	log.Println("connected to controller")
 
-	w := worker.NewWorker(conn)
+	w := worker.NewWorker(conn, log)
 	log.Print("created worker")
 	var result string
 
@@ -60,5 +61,7 @@ func main() {
 
 	}
 
-	fmt.Printf("Result %s\n", result)
+	w.Conn.Send <- protocol.Message{Command: protocol.MsgFound, Result: &protocol.FoundResult{Password: result}}
+	time.Sleep(5 * time.Second)
+
 }

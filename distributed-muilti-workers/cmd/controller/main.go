@@ -1,6 +1,8 @@
 package main
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"net"
 	"os"
@@ -10,8 +12,6 @@ import (
 	"github.com/aryanjand/Unix-Password-Cracker/internal/controller"
 	"github.com/aryanjand/Unix-Password-Cracker/internal/utils"
 )
-
-const MAX_WORKERS = 10
 
 func main() {
 	log := utils.NewLogger("[Controller]")
@@ -37,23 +37,55 @@ func main() {
 	}
 	log.Printf("listening for workers on %s", address)
 
-	manager := controller.NewWorkerManger()
 	alloc := chunk.NewChunkAllocator(uint64(cfg.PartitionSize), 0, 0)
+	ctx, cancel := context.WithCancel(context.Background())
+
+	manager := controller.NewWorkerManger()
 	foundResultCh := make(chan string)
+	connCh := make(chan net.Conn)
+	var password string
 
-	for {
-		conn, err := ln.Accept()
-		if err != nil {
-			log.Printf("accept error: %v", err)
-			continue
+	go func() {
+		defer close(connCh)
+		for {
+			conn, err := ln.Accept()
+			if err != nil {
+				if errors.Is(err, net.ErrClosed) {
+					return
+				}
+				log.Printf("accept error: %v", err)
+				continue
+			}
+
+			select {
+			case connCh <- conn:
+			case <-ctx.Done():
+				_ = conn.Close()
+				return
+			}
 		}
+	}()
 
-		remoteAddr := conn.RemoteAddr().String()
-		workerLog := utils.NewLogger(fmt.Sprintf("[Controller][Worker: (%s)]", remoteAddr))
+	for password == "" {
+		select {
+		case password = <-foundResultCh:
+			cancel()
+			_ = ln.Close()
+		case conn, ok := <-connCh:
+			if !ok {
+				break
+			}
 
-		worker := controller.NewWorker(conn, shadow, alloc, cfg.HeartbeatInterval, foundResultCh)
-		manager.AddWorker(remoteAddr, *worker)
-		workerLog.Printf("worker connected, total connected %d", manager.Count())
+			remoteAddr := conn.RemoteAddr().String()
+			workerLog := utils.NewLogger(fmt.Sprintf("[Controller][Worker: (%s)]", remoteAddr))
 
+			worker := controller.NewWorker(conn, shadow, alloc, cfg.HeartbeatInterval, foundResultCh, workerLog)
+			workerLog.Printf("worker connected, total connected %d", manager.Count())
+			manager.AddWorker(remoteAddr, *worker)
+		}
 	}
+
+	log.Println("Found Result ", password)
+	// Going add more logic after
+
 }
