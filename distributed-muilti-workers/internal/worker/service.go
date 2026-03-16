@@ -1,25 +1,29 @@
 package worker
 
 import (
+	"fmt"
 	"net"
 	"runtime"
 	"sync/atomic"
 
 	"github.com/aryanjand/Unix-Password-Cracker/internal/protocol"
 	"github.com/aryanjand/Unix-Password-Cracker/internal/transport/tcp"
+	"github.com/aryanjand/Unix-Password-Cracker/internal/utils"
 )
 
 type Worker struct {
 	Conn        *tcp.Conn
 	DeltaTested int64
 	TotalTested int64
+	Logger      *utils.Logger
 	JobCh       chan *protocol.JobResponse
 }
 
-func NewWorker(conn net.Conn) *Worker {
+func NewWorker(conn net.Conn, log *utils.Logger) *Worker {
 	w := &Worker{
-		Conn:  tcp.NewConn(conn),
-		JobCh: make(chan *protocol.JobResponse, 1),
+		Conn:   tcp.NewConn(conn),
+		Logger: log,
+		JobCh:  make(chan *protocol.JobResponse, 1),
 	}
 
 	go w.HandleWorker()
@@ -28,13 +32,17 @@ func NewWorker(conn net.Conn) *Worker {
 }
 
 func (w *Worker) HandleWorker() {
+	var chunk protocol.Chunk
 	for {
 		select {
 		case msg := <-w.Conn.Recv:
+			w.Logger.Printf("-> command received %s", msg.Command)
+
 			switch msg.Command {
 			case protocol.MsgJobRes:
 				if msg.JobResponse != nil {
 					w.JobCh <- msg.JobResponse
+					chunk = msg.JobResponse.Chunk
 				}
 
 			case protocol.MsgHeartbeatReq:
@@ -52,6 +60,7 @@ func (w *Worker) HandleWorker() {
 					TotalTested:   atomic.LoadInt64(&w.TotalTested),
 					ThreadsActive: int64(runtime.NumGoroutine()),
 					CurrentRate:   float64(delta) / float64(interval),
+					CurrentChunk:  fmt.Sprintf("%d-%d", chunk.Start, chunk.End),
 				}
 
 				w.Conn.Send <- protocol.Message{
@@ -61,6 +70,7 @@ func (w *Worker) HandleWorker() {
 
 			case protocol.MsgStop:
 				w.Conn.Send <- protocol.Message{Command: protocol.MsgStopAck}
+				w.Conn.Close()
 			}
 
 		case <-w.Conn.Stop.Done():

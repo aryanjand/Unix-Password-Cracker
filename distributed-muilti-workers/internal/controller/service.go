@@ -1,7 +1,6 @@
 package controller
 
 import (
-	"fmt"
 	"log"
 	"net"
 	"time"
@@ -9,6 +8,7 @@ import (
 	"github.com/aryanjand/Unix-Password-Cracker/internal/chunk"
 	"github.com/aryanjand/Unix-Password-Cracker/internal/protocol"
 	"github.com/aryanjand/Unix-Password-Cracker/internal/transport/tcp"
+	"github.com/aryanjand/Unix-Password-Cracker/internal/utils"
 )
 
 type Worker struct {
@@ -16,10 +16,11 @@ type Worker struct {
 	conn          *tcp.Conn
 	alloc         *chunk.ChunkAllocator
 	shadow        protocol.ShadowEntry
+	logger        *utils.Logger
 	foundResultCh chan<- string
 }
 
-func NewWorker(conn net.Conn, shadow protocol.ShadowEntry, alloc *chunk.ChunkAllocator, interval int, foundResultCh chan<- string) *Worker {
+func NewWorker(conn net.Conn, shadow protocol.ShadowEntry, alloc *chunk.ChunkAllocator, interval int, foundCh chan<- string, log *utils.Logger) *Worker {
 	cc := tcp.NewConn(conn)
 
 	worker := &Worker{
@@ -27,7 +28,8 @@ func NewWorker(conn net.Conn, shadow protocol.ShadowEntry, alloc *chunk.ChunkAll
 		alloc:         alloc,
 		shadow:        shadow,
 		interval:      interval,
-		foundResultCh: foundResultCh,
+		logger:        log,
+		foundResultCh: foundCh,
 	}
 
 	go worker.HandleWorker()
@@ -41,14 +43,13 @@ func (w *Worker) HandleWorker() {
 
 	for {
 
-		fmt.Println("About to enter select")
 		select {
 		case msg := <-w.conn.Recv:
+			w.logger.Printf("-> command received %s", msg.Command)
 
 			switch msg.Command {
 
 			case protocol.MsgJobReq:
-
 				chunk, _ := w.alloc.GetNewGlobalChunk()
 				w.conn.Send <- protocol.Message{
 					Command: protocol.MsgJobRes,
@@ -58,22 +59,15 @@ func (w *Worker) HandleWorker() {
 					},
 				}
 
-				fmt.Println("Check the Job Response ", protocol.Message{
-					Command: protocol.MsgJobRes,
-					JobResponse: &protocol.JobResponse{
-						Chunk:       chunk,
-						ShadowEntry: w.shadow,
-					},
-				})
-
 			case protocol.MsgHeartbeatRes:
 				hb := msg.HeartbeatResponse
 				log.Printf(
-					"heartbeat | delta: %-10d | total: %-12d | threads: %-3d | rate: %.2f/sec",
+					"heartbeat | delta: %-10d | total: %-12d | threads: %-3d | rate: %.2f/sec | chunk: %s",
 					hb.DeltaTested,
 					hb.TotalTested,
 					hb.ThreadsActive,
 					hb.CurrentRate,
+					hb.CurrentChunk,
 				)
 
 			case protocol.MsgFound:
