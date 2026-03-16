@@ -6,10 +6,12 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"time"
 
 	"github.com/aryanjand/Unix-Password-Cracker/internal/chunk"
 	"github.com/aryanjand/Unix-Password-Cracker/internal/config"
 	"github.com/aryanjand/Unix-Password-Cracker/internal/controller"
+	"github.com/aryanjand/Unix-Password-Cracker/internal/protocol"
 	"github.com/aryanjand/Unix-Password-Cracker/internal/utils"
 )
 
@@ -86,6 +88,8 @@ func main() {
 	}
 
 	log.Println("Found Result ", password)
-	// Going add more logic after
+	manager.BroadcastMessage(protocol.MsgStop)
+
+	time.Sleep(5 * time.Second)
 
 }
