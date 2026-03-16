@@ -1,27 +1,26 @@
 package controller
 
-
 import (
 	"fmt"
 	"log"
 	"net"
-	"sync"
 	"time"
 
 	"github.com/aryanjand/Unix-Password-Cracker/internal/chunk"
 	"github.com/aryanjand/Unix-Password-Cracker/internal/protocol"
+	"github.com/aryanjand/Unix-Password-Cracker/internal/transport/tcp"
 )
 
 type Worker struct {
 	interval      int
-	conn          *Conn
+	conn          *tcp.Conn
 	alloc         *chunk.ChunkAllocator
 	shadow        protocol.ShadowEntry
 	foundResultCh chan<- string
 }
 
 func NewWorker(conn net.Conn, shadow protocol.ShadowEntry, alloc *chunk.ChunkAllocator, interval int, foundResultCh chan<- string) *Worker {
-	cc := NewConn(conn)
+	cc := tcp.NewConn(conn)
 
 	worker := &Worker{
 		conn:          cc,
@@ -44,14 +43,14 @@ func (w *Worker) HandleWorker() {
 
 		fmt.Println("About to enter select")
 		select {
-		case msg := <-w.conn.recv:
+		case msg := <-w.conn.Recv:
 
 			switch msg.Command {
 
 			case protocol.MsgJobReq:
 
 				chunk, _ := w.alloc.GetNewGlobalChunk()
-				w.conn.send <- protocol.Message{
+				w.conn.Send <- protocol.Message{
 					Command: protocol.MsgJobRes,
 					JobResponse: &protocol.JobResponse{
 						Chunk:       chunk,
@@ -90,9 +89,9 @@ func (w *Worker) HandleWorker() {
 			}
 
 		case <-heartbeat.C:
-			w.conn.send <- protocol.Message{Command: protocol.MsgHeartbeatReq}
+			w.conn.Send <- protocol.Message{Command: protocol.MsgHeartbeatReq}
 
-		case <-w.conn.stop.Done():
+		case <-w.conn.Stop.Done():
 			return
 		}
 

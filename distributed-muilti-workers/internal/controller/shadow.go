@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"fmt"
 	"os"
-	"strings"
 
 	"github.com/aryanjand/Unix-Password-Cracker/internal/protocol"
 )

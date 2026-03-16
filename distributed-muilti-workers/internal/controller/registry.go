@@ -1,5 +1,11 @@
 package controller
 
+import (
+	"sync"
+
+	"github.com/aryanjand/Unix-Password-Cracker/internal/protocol"
+)
+
 
 type WorkerManager struct {
 	sync.Mutex
@@ -48,7 +54,7 @@ func (cm *WorkerManager) BroadcastMessage(msg protocol.Command) {
 	defer cm.Unlock()
 
 	for id, worker := range cm.workers {
-		worker.conn.send <- protocol.Message{Command: msg}
+		worker.conn.Send <- protocol.Message{Command: msg}
 		if msg == protocol.MsgStop {
 			delete(cm.workers, id)
 		}

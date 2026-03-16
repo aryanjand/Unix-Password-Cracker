@@ -1,5 +1,12 @@
 package controller
 
+import (
+	"fmt"
+	"strings"
+
+	"github.com/aryanjand/Unix-Password-Cracker/internal/protocol"
+)
+
 // Parse's Shadow line and creates protocol.ShadowEntry
 func parseShadowLine(line string) (protocol.ShadowEntry, error) {
 	fields := strings.Split(line, ":")
