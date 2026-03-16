@@ -1,7 +1,6 @@
 package controller
 
 import (
-	"log"
 	"net"
 	"time"
 
@@ -10,6 +9,8 @@ import (
 	"github.com/aryanjand/Unix-Password-Cracker/internal/transport/tcp"
 	"github.com/aryanjand/Unix-Password-Cracker/internal/utils"
 )
+
+const MAX_MISSED_HEARTBEATS = 2
 
 type Worker struct {
 	interval      int
@@ -40,6 +41,7 @@ func NewWorker(conn net.Conn, shadow protocol.ShadowEntry, alloc *chunk.ChunkAll
 func (w *Worker) HandleWorker() {
 	heartbeat := time.NewTicker(time.Duration(w.interval) * time.Second)
 	defer heartbeat.Stop()
+	missedHeartbeats := 0
 
 	for {
 
@@ -60,8 +62,9 @@ func (w *Worker) HandleWorker() {
 				}
 
 			case protocol.MsgHeartbeatRes:
+				missedHeartbeats = 0
 				hb := msg.HeartbeatResponse
-				log.Printf(
+				w.logger.Printf(
 					"heartbeat | delta: %-10d | total: %-12d | threads: %-3d | rate: %.2f/sec | chunk: %s",
 					hb.DeltaTested,
 					hb.TotalTested,
@@ -72,17 +75,23 @@ func (w *Worker) HandleWorker() {
 
 			case protocol.MsgFound:
 				result := msg.Result
-				log.Printf("<- received cracking result")
+				w.logger.Printf("<- received cracking result")
 				w.foundResultCh <- result.Password
 				return
 
 			case protocol.MsgError:
-				log.Printf("worker reported failure")
-				w.conn.Close()
+				w.logger.Printf("worker reported failure")
+				w.conn.Stop.Done()
 				return
 			}
 
 		case <-heartbeat.C:
+			if missedHeartbeats >= MAX_MISSED_HEARTBEATS {
+				w.logger.Printf("worker heartbeat timeout, closing connection")
+				w.conn.Stop.Done()
+				return
+			}
+			missedHeartbeats++
 			w.conn.Send <- protocol.Message{Command: protocol.MsgHeartbeatReq}
 
 		case <-w.conn.Stop.Done():

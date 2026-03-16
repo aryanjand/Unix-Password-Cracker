@@ -6,7 +6,6 @@ import (
 	"github.com/aryanjand/Unix-Password-Cracker/internal/protocol"
 )
 
-
 type WorkerManager struct {
 	sync.Mutex
 
@@ -31,6 +30,12 @@ func (cm *WorkerManager) AddWorker(id string, worker Worker) {
 	defer cm.Unlock()
 
 	cm.workers[id] = worker
+
+	go func(id string, worker Worker) {
+		<-worker.conn.Stop.Done()
+		cm.RemoveWorker(id)
+		worker.logger.Printf("worker removed from manager (id=%s, active_workers=%d)", id, cm.Count())
+	}(id, worker)
 }
 
 func (cm *WorkerManager) RemoveWorker(id string) {
@@ -38,7 +43,6 @@ func (cm *WorkerManager) RemoveWorker(id string) {
 	defer cm.Unlock()
 
 	delete(cm.workers, id)
-
 }
 
 func (cm *WorkerManager) GetWorker(id string) (Worker, bool) {
