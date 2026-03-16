@@ -1,7 +1,5 @@
 package tcp
 
-package worker
-
 import (
 	"context"
 	"encoding/json"
@@ -49,7 +47,6 @@ func (c *Conn) ReadLoop() {
 		case <-c.Stop.Done():
 			return
 		case c.Recv <- msg:
-
 		}
 	}
 }
@@ -61,7 +58,6 @@ func (c *Conn) WriteLoop() error {
 		select {
 		case <-c.Stop.Done():
 			return nil
-
 		case msg := <-c.Send:
 			if err := encoder.Encode(msg); err != nil {
 				c.Close()
