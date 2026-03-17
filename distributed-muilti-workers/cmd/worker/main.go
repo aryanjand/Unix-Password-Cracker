@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"net"
 	"os"
-	"time"
 
 	"github.com/aryanjand/Unix-Password-Cracker/internal/config"
 	"github.com/aryanjand/Unix-Password-Cracker/internal/protocol"
@@ -37,7 +36,7 @@ func main() {
 	for {
 
 		// Todo left
-		// 2. Stop the workers now
+		// 2. Stop the threads now
 		// 3. Send Found Results, Metrics
 
 		// 1. Sent a Job Request
@@ -62,6 +61,6 @@ func main() {
 	}
 
 	w.Conn.Send <- protocol.Message{Command: protocol.MsgFound, Result: &protocol.FoundResult{Password: result}}
-	time.Sleep(5 * time.Second)
 
+	w.Wg.Wait()
 }

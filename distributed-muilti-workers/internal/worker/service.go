@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net"
 	"runtime"
+	"sync"
 	"sync/atomic"
 
 	"github.com/aryanjand/Unix-Password-Cracker/internal/protocol"
@@ -15,8 +16,10 @@ type Worker struct {
 	Conn        *tcp.Conn
 	DeltaTested int64
 	TotalTested int64
-	Logger      *utils.Logger
-	JobCh       chan *protocol.JobResponse
+
+	JobCh  chan *protocol.JobResponse
+	Logger *utils.Logger
+	Wg     sync.WaitGroup
 }
 
 func NewWorker(conn net.Conn, log *utils.Logger) *Worker {
@@ -26,12 +29,14 @@ func NewWorker(conn net.Conn, log *utils.Logger) *Worker {
 		JobCh:  make(chan *protocol.JobResponse, 1),
 	}
 
+	w.Wg.Add(1)
 	go w.HandleWorker()
 
 	return w
 }
 
 func (w *Worker) HandleWorker() {
+	defer w.Wg.Done()
 	var chunk protocol.Chunk
 	for {
 		select {
@@ -70,11 +75,15 @@ func (w *Worker) HandleWorker() {
 
 			case protocol.MsgStop:
 				w.Conn.Send <- protocol.Message{Command: protocol.MsgStopAck}
-				w.Conn.Close()
+				w.Conn.Stop.Done()
 			}
 
 		case <-w.Conn.Stop.Done():
 			return
 		}
 	}
+}
+
+func (w *Worker) Wait() {
+	w.Wg.Wait()
 }
