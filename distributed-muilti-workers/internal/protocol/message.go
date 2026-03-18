@@ -46,6 +46,7 @@ type ShadowEntry struct {
 type JobRequest struct{}
 type JobResponse struct {
 	Chunk       Chunk
+	Checkpoint  int
 	ShadowEntry ShadowEntry
 }
 

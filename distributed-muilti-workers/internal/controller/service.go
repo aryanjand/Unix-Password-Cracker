@@ -14,6 +14,7 @@ const MAX_MISSED_HEARTBEATS = 2
 
 type Worker struct {
 	interval      int
+	checkpoint    int
 	conn          *tcp.Conn
 	alloc         *chunk.ChunkAllocator
 	shadow        protocol.ShadowEntry
@@ -21,7 +22,7 @@ type Worker struct {
 	foundResultCh chan<- string
 }
 
-func NewWorker(conn net.Conn, shadow protocol.ShadowEntry, alloc *chunk.ChunkAllocator, interval int, foundCh chan<- string, log *utils.Logger) *Worker {
+func NewWorker(conn net.Conn, shadow protocol.ShadowEntry, alloc *chunk.ChunkAllocator, interval int, checkpoint int, foundCh chan<- string, log *utils.Logger) *Worker {
 	cc := tcp.NewConn(conn)
 
 	worker := &Worker{
@@ -29,6 +30,7 @@ func NewWorker(conn net.Conn, shadow protocol.ShadowEntry, alloc *chunk.ChunkAll
 		alloc:         alloc,
 		shadow:        shadow,
 		interval:      interval,
+		checkpoint:    checkpoint,
 		logger:        log,
 		foundResultCh: foundCh,
 	}
@@ -57,6 +59,7 @@ func (w *Worker) HandleWorker() {
 					Command: protocol.MsgJobRes,
 					JobResponse: &protocol.JobResponse{
 						Chunk:       chunk,
+						Checkpoint:  w.checkpoint,
 						ShadowEntry: w.shadow,
 					},
 				}

@@ -40,7 +40,7 @@ func main() {
 	log.Printf("listening for workers on %s", address)
 
 	alloc := chunk.NewChunkAllocator(uint64(cfg.PartitionSize), 0, 0)
-	ctx, cancel := context.WithCancel(context.Background())
+	listenerCtx, listenerCancel := context.WithCancel(context.Background())
 
 	manager := controller.NewWorkerManger()
 	foundResultCh := make(chan string)
@@ -61,7 +61,7 @@ func main() {
 
 			select {
 			case connCh <- conn:
-			case <-ctx.Done():
+			case <-listenerCtx.Done():
 				_ = conn.Close()
 				return
 			}
@@ -71,7 +71,7 @@ func main() {
 	for password == "" {
 		select {
 		case password = <-foundResultCh:
-			cancel()
+			listenerCancel()
 			_ = ln.Close()
 		case conn, ok := <-connCh:
 			if !ok {

@@ -18,8 +18,8 @@ type Worker struct {
 	TotalTested int64
 
 	JobCh  chan *protocol.JobResponse
-	Logger *utils.Logger
 	Wg     sync.WaitGroup
+	Logger *utils.Logger
 }
 
 func NewWorker(conn net.Conn, log *utils.Logger) *Worker {

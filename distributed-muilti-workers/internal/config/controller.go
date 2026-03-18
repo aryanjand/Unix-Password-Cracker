@@ -10,11 +10,12 @@ type Controller struct {
 	Port              int
 	Username          string
 	ShadowFilePath    string
-	HeartbeatInterval int
+	Checkpoint        int
 	PartitionSize     int
+	HeartbeatInterval int
 }
 
-const ControllerUsage = "Usage: controller -p PORT -f SHADOW_FILE -u USERNAME -b HEARTBEAT_SECONDS -c PARTITION_SIZE"
+const ControllerUsage = "Usage: controller -p PORT -f SHADOW_FILE -u USERNAME -b HEARTBEAT_SECONDS -c PARTITION_SIZE -k CHECKPOINT_INTERVAL"
 
 func ParseController(args []string) (Controller, error) {
 	var cfg Controller
@@ -25,6 +26,7 @@ func ParseController(args []string) (Controller, error) {
 	fs.StringVar(&cfg.Username, "u", "", "username")
 	fs.StringVar(&cfg.ShadowFilePath, "f", "", "shadow file path")
 	fs.IntVar(&cfg.HeartbeatInterval, "b", 0, "heartbeat interval in seconds")
+	fs.IntVar(&cfg.Checkpoint, "k", 0, "checkpoint interval measured in candidate password attempts")
 	fs.IntVar(&cfg.PartitionSize, "c", 1, "partition size for password space")
 	fs.IntVar(&cfg.PartitionSize, "s", 1, "partition size for password space")
 
@@ -33,6 +35,7 @@ func ParseController(args []string) (Controller, error) {
 	}
 
 	if cfg.Port <= 0 || cfg.Port > 65535 ||
+		cfg.Checkpoint <= 0 ||
 		cfg.PartitionSize <= 0 ||
 		cfg.HeartbeatInterval <= 0 ||
 		cfg.ShadowFilePath == "" ||
