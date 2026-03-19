@@ -75,7 +75,8 @@ func (w *Worker) HandleWorker() {
 
 			case protocol.MsgStop:
 				w.Conn.Send <- protocol.Message{Command: protocol.MsgStopAck}
-				w.Conn.Stop.Done()
+				w.Conn.Close()
+				return
 			}
 
 		case <-w.Conn.Stop.Done():

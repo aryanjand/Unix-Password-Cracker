@@ -11,7 +11,9 @@ import (
 	"github.com/aryanjand/Unix-Password-Cracker/internal/chunk"
 	"github.com/aryanjand/Unix-Password-Cracker/internal/config"
 	"github.com/aryanjand/Unix-Password-Cracker/internal/controller"
+	"github.com/aryanjand/Unix-Password-Cracker/internal/persistence"
 	"github.com/aryanjand/Unix-Password-Cracker/internal/protocol"
+	"github.com/aryanjand/Unix-Password-Cracker/internal/storage"
 	"github.com/aryanjand/Unix-Password-Cracker/internal/utils"
 )
 
@@ -22,6 +24,17 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	stateStore, err := storage.NewMySQLStore(cfg.MySQLDSN)
+	if err != nil {
+		log.Fatalf("failed to connect mysql: %v", err)
+	}
+	defer func() {
+		if err := stateStore.Close(); err != nil {
+			log.Printf("failed to close mysql store: %v", err)
+		}
+	}()
+	log.Printf("connected to mysql")
 
 	shadow, err := controller.FindUserInShadow(cfg.ShadowFilePath, cfg.Username)
 	if err != nil {
@@ -81,13 +94,24 @@ func main() {
 			remoteAddr := conn.RemoteAddr().String()
 			workerLog := utils.NewLogger(fmt.Sprintf("[Controller][Worker: (%s)]", remoteAddr))
 
-			worker := controller.NewWorker(conn, shadow, alloc, cfg.HeartbeatInterval, foundResultCh, workerLog)
+			worker := controller.NewWorker(
+				conn,
+				remoteAddr,
+				shadow,
+				alloc,
+				cfg.HeartbeatInterval,
+				cfg.Checkpoint,
+				foundResultCh,
+				stateStore,
+				workerLog,
+			)
 			workerLog.Printf("worker connected, total connected %d", manager.Count())
 			manager.AddWorker(remoteAddr, *worker)
 		}
 	}
 
 	log.Println("Found Result ", password)
+	_ = stateStore.UpsertWorkerState(context.Background(), "controller", persistence.WorkerStateCompleted, "")
 	manager.BroadcastMessage(protocol.MsgStop)
 
 	time.Sleep(5 * time.Second)
