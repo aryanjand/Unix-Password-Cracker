@@ -15,9 +15,10 @@ type Controller struct {
 	PartitionSize     int
 	HeartbeatInterval int
 	MySQLDSN          string
+	Reset             bool
 }
 
-const ControllerUsage = "Usage: controller -p PORT -f SHADOW_FILE -u USERNAME -b HEARTBEAT_SECONDS -c PARTITION_SIZE -k CHECKPOINT_INTERVAL [-d MYSQL_DSN]"
+const ControllerUsage = "Usage: controller -p PORT -f SHADOW_FILE -u USERNAME -b HEARTBEAT_SECONDS -c PARTITION_SIZE -k CHECKPOINT_INTERVAL [-d MYSQL_DSN] [-reset]"
 
 func ParseController(args []string) (Controller, error) {
 	var cfg Controller
@@ -32,6 +33,7 @@ func ParseController(args []string) (Controller, error) {
 	fs.IntVar(&cfg.PartitionSize, "c", 1, "partition size for password space")
 	fs.IntVar(&cfg.PartitionSize, "s", 1, "partition size for password space")
 	fs.StringVar(&cfg.MySQLDSN, "d", defaultMySQLDSN(), "mysql dsn")
+	fs.BoolVar(&cfg.Reset, "reset", false, "reset persisted mysql tracking state before startup")
 
 	if err := fs.Parse(args); err != nil {
 		return Controller{}, err

@@ -21,7 +21,7 @@ type MySQLStore struct {
 
 var _ persistence.Store = (*MySQLStore)(nil)
 
-func NewMySQLStore(dsn string) (*MySQLStore, error) {
+func NewMySQLStore(dsn string, reset bool) (*MySQLStore, error) {
 	if strings.TrimSpace(dsn) == "" {
 		return nil, fmt.Errorf("mysql DSN is required")
 	}
@@ -45,7 +45,7 @@ func NewMySQLStore(dsn string) (*MySQLStore, error) {
 		queries: dbsqlc.New(db),
 	}
 
-	if err := store.migrate(context.Background()); err != nil {
+	if err := store.migrate(context.Background(), reset); err != nil {
 		_ = db.Close()
 		return nil, err
 	}
@@ -130,16 +130,23 @@ func (s *MySQLStore) RecordCheckpoint(ctx context.Context, workerID string, chun
 	})
 }
 
-func (s *MySQLStore) migrate(ctx context.Context) error {
-	for idx, stmt := range migrations {
-		if _, err := s.db.ExecContext(ctx, stmt); err != nil {
+func (s *MySQLStore) migrate(ctx context.Context, reset bool) error {
+	start := 1
+	if reset {
+		start = 0
+	}
+
+	for idx := start; idx < len(migrations); idx++ {
+		if _, err := s.db.ExecContext(ctx, migrations[idx]); err != nil {
 			return fmt.Errorf("apply migration %d: %w", idx+1, err)
 		}
 	}
+
 	return nil
 }
 
 var migrations = []string{
+	`DROP TABLE IF EXISTS worker_checkpoints, tasks, worker_failures, workers`,
 	`CREATE TABLE IF NOT EXISTS workers (
 		worker_id VARCHAR(255) PRIMARY KEY,
 		state VARCHAR(32) NOT NULL,

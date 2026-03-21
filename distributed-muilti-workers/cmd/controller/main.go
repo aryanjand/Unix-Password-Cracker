@@ -25,7 +25,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	stateStore, err := storage.NewMySQLStore(cfg.MySQLDSN)
+	stateStore, err := storage.NewMySQLStore(cfg.MySQLDSN, cfg.Reset)
 	if err != nil {
 		log.Fatalf("failed to connect mysql: %v", err)
 	}
@@ -105,8 +105,8 @@ func main() {
 				stateStore,
 				workerLog,
 			)
-			workerLog.Printf("worker connected, total connected %d", manager.Count())
 			manager.AddWorker(remoteAddr, *worker)
+			workerLog.Printf("worker connected, total connected %d", manager.Count())
 		}
 	}
 
