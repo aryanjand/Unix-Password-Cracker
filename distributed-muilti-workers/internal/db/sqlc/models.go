@@ -29,13 +29,9 @@ type FailTaskParams struct {
 }
 
 type InsertCheckpointParams struct {
-	WorkerID      string
-	ChunkID       uint64
-	ChunkStart    uint64
-	ChunkEnd      uint64
-	DeltaTested   int64
-	TotalTested   int64
-	ThreadsActive int64
-	CurrentRate   float64
-	CurrentChunk  string
+	WorkerID   string
+	ChunkID    uint64
+	ChunkStart uint64
+	ChunkEnd   uint64
+	Completed  uint64
 }

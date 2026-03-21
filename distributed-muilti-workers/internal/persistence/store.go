@@ -22,5 +22,5 @@ type Store interface {
 	CompleteTask(ctx context.Context, chunkID uint64) error
 	CompleteTaskWithFound(ctx context.Context, chunkID uint64, foundPassword string) error
 	FailTask(ctx context.Context, chunkID uint64, reason string) error
-	RecordCheckpoint(ctx context.Context, workerID string, chunk protocol.Chunk, hb protocol.HeartbeatResponse) error
+	RecordCheckpoint(ctx context.Context, workerID string, chunk protocol.Chunk, report protocol.CheckpointReport) error
 }

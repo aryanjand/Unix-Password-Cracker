@@ -111,13 +111,9 @@ INSERT INTO worker_checkpoints (
     chunk_id,
     chunk_start,
     chunk_end,
-    delta_tested,
-    total_tested,
-    threads_active,
-    current_rate,
-    current_chunk
+    completed
 ) VALUES (
-    ?, ?, ?, ?, ?, ?, ?, ?, ?
+    ?, ?, ?, ?, ?
 )
 `
 
@@ -129,11 +125,7 @@ func (q *Queries) InsertCheckpoint(ctx context.Context, arg InsertCheckpointPara
 		arg.ChunkID,
 		arg.ChunkStart,
 		arg.ChunkEnd,
-		arg.DeltaTested,
-		arg.TotalTested,
-		arg.ThreadsActive,
-		arg.CurrentRate,
-		arg.CurrentChunk,
+		arg.Completed,
 	)
 	return err
 }

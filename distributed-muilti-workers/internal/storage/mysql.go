@@ -111,22 +111,13 @@ func (s *MySQLStore) FailTask(ctx context.Context, chunkID uint64, reason string
 	})
 }
 
-func (s *MySQLStore) RecordCheckpoint(ctx context.Context, workerID string, chunk protocol.Chunk, hb protocol.HeartbeatResponse) error {
-	currentChunk := hb.CurrentChunk
-	if strings.TrimSpace(currentChunk) == "" {
-		currentChunk = fmt.Sprintf("%d-%d", chunk.Start, chunk.End)
-	}
-
+func (s *MySQLStore) RecordCheckpoint(ctx context.Context, workerID string, chunk protocol.Chunk, report protocol.CheckpointReport) error {
 	return s.queries.InsertCheckpoint(ctx, dbsqlc.InsertCheckpointParams{
-		WorkerID:      workerID,
-		ChunkID:       chunk.Id,
-		ChunkStart:    chunk.Start,
-		ChunkEnd:      chunk.End,
-		DeltaTested:   hb.DeltaTested,
-		TotalTested:   hb.TotalTested,
-		ThreadsActive: hb.ThreadsActive,
-		CurrentRate:   hb.CurrentRate,
-		CurrentChunk:  currentChunk,
+		WorkerID:   workerID,
+		ChunkID:    chunk.Id,
+		ChunkStart: chunk.Start,
+		ChunkEnd:   chunk.End,
+		Completed:  report.Completed,
 	})
 }
 
@@ -189,11 +180,7 @@ var migrations = []string{
 		chunk_id BIGINT UNSIGNED NOT NULL DEFAULT 0,
 		chunk_start BIGINT UNSIGNED NOT NULL DEFAULT 0,
 		chunk_end BIGINT UNSIGNED NOT NULL DEFAULT 0,
-		delta_tested BIGINT NOT NULL,
-		total_tested BIGINT NOT NULL,
-		threads_active INT NOT NULL,
-		current_rate DOUBLE NOT NULL,
-		current_chunk VARCHAR(64) NOT NULL,
+		completed BIGINT UNSIGNED NOT NULL DEFAULT 0,
 		reported_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 		INDEX idx_checkpoints_worker_reported (worker_id, reported_at),
 		INDEX idx_checkpoints_chunk_id (chunk_id),

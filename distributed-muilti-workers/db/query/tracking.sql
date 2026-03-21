@@ -71,11 +71,7 @@ INSERT INTO worker_checkpoints (
     chunk_id,
     chunk_start,
     chunk_end,
-    delta_tested,
-    total_tested,
-    threads_active,
-    current_rate,
-    current_chunk
+    completed
 ) VALUES (
-    ?, ?, ?, ?, ?, ?, ?, ?, ?
+    ?, ?, ?, ?, ?
 );
