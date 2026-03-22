@@ -7,30 +7,42 @@ import (
 )
 
 type ChunkAllocator struct {
-	curIndex  atomic.Uint64
-	maxIndex  uint64
-	partition uint64
+	chunkRequeueCh chan protocol.Chunk
+	curIndex       atomic.Uint64
+	maxIndex       uint64
+	partition      uint64
 }
 
 func NewChunkAllocator(partition uint64, start uint64, end uint64) *ChunkAllocator {
 	ca := &ChunkAllocator{
-		partition: partition,
-		maxIndex:  end,
+		maxIndex:       end,
+		partition:      partition,
+		chunkRequeueCh: make(chan protocol.Chunk, 32),
 	}
 	ca.curIndex.Store(start)
 	return ca
 }
 
-func (ca *ChunkAllocator) GetNewGlobalChunk() (protocol.Chunk, bool) {
-	start := ca.curIndex.Add(ca.partition) - ca.partition
-	end := start + ca.partition
-	id := end / ca.partition
+func (ca *ChunkAllocator) GetNewGlobalChunk() protocol.Chunk {
+	select {
+	case chunk := <-ca.chunkRequeueCh:
+		return chunk
 
-	return protocol.Chunk{
-		Id:    id,
-		Start: start,
-		End:   end,
-	}, true
+	default:
+		start := ca.curIndex.Add(ca.partition) - ca.partition
+		end := start + ca.partition
+		id := end / ca.partition
+
+		return protocol.Chunk{
+			Id:    id,
+			Start: start,
+			End:   end,
+		}
+	}
+}
+
+func (ca *ChunkAllocator) GlobalRequeueChunk(chunk protocol.Chunk) {
+	ca.chunkRequeueCh <- chunk
 }
 
 func (ca *ChunkAllocator) GetNewWorkItem() (protocol.Chunk, bool) {

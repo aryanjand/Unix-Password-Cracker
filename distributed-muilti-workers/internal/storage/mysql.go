@@ -121,6 +121,20 @@ func (s *MySQLStore) RecordCheckpoint(ctx context.Context, workerID string, chun
 	})
 }
 
+func (s *MySQLStore) GetLatestCheckpoint(ctx context.Context, workerID string, chunkID uint64) (uint64, error) {
+	var completed uint64
+	err := s.db.QueryRowContext(
+		ctx,
+		`SELECT COALESCE(MAX(completed), 0) FROM worker_checkpoints WHERE worker_id = ? AND chunk_id = ?`,
+		workerID,
+		chunkID,
+	).Scan(&completed)
+	if err != nil {
+		return 0, err
+	}
+	return completed, nil
+}
+
 func (s *MySQLStore) migrate(ctx context.Context, reset bool) error {
 	start := 1
 	if reset {

@@ -25,3 +25,7 @@ func (NoopStore) FailTask(context.Context, uint64, string) error { return nil }
 func (NoopStore) RecordCheckpoint(context.Context, string, protocol.Chunk, protocol.CheckpointReport) error {
 	return nil
 }
+
+func (NoopStore) GetLatestCheckpoint(context.Context, string, uint64) (uint64, error) {
+	return 0, nil
+}

@@ -2,6 +2,7 @@ package controller
 
 import (
 	"context"
+	"fmt"
 	"net"
 	"time"
 
@@ -69,7 +70,7 @@ func (w *Worker) HandleWorker() {
 					w.persistTaskComplete("")
 				}
 
-				chunk, _ := w.alloc.GetNewGlobalChunk()
+				chunk := w.alloc.GetNewGlobalChunk()
 				w.activeChunk = &chunk
 				w.conn.Send <- protocol.Message{
 					Command: protocol.MsgJobRes,
@@ -135,14 +136,21 @@ func (w *Worker) HandleWorker() {
 				if reason == "" {
 					reason = "worker reported failure"
 				}
+				requeueChunk, err := w.getFailedChunk()
 				w.logger.Printf("%s", reason)
 				w.persistTaskFailure(reason)
 				w.persistFailure(reason)
 				w.persistWorkerState(persistence.WorkerStateFailed, reason)
+				if err != nil {
+					w.conn.Close()
+					return
+				}
+				w.alloc.GlobalRequeueChunk(requeueChunk)
 				w.conn.Close()
 				return
 
 			case protocol.MsgStopAck:
+				w.persistTaskFailure("worker stopped")
 				w.persistWorkerState(persistence.WorkerStateDisconnected, "")
 				w.conn.Close()
 				return
@@ -151,10 +159,16 @@ func (w *Worker) HandleWorker() {
 		case <-heartbeat.C:
 			if missedHeartbeats >= MAX_MISSED_HEARTBEATS {
 				reason := "worker heartbeat timeout"
+				requeueChunk, err := w.getFailedChunk()
 				w.logger.Printf("%s, closing connection", reason)
 				w.persistTaskFailure(reason)
 				w.persistFailure(reason)
 				w.persistWorkerState(persistence.WorkerStateFailed, reason)
+				if err != nil {
+					w.conn.Close()
+					return
+				}
+				w.alloc.GlobalRequeueChunk(requeueChunk)
 				w.conn.Close()
 				return
 			}
@@ -167,9 +181,13 @@ func (w *Worker) HandleWorker() {
 			}
 
 		case <-w.conn.Stop.Done():
+			requeueChunk, err := w.getFailedChunk()
 			w.persistTaskFailure("connection closed")
 			w.persistWorkerState(persistence.WorkerStateDisconnected, "")
-			// Todo: when we detect failure here, signal resign chunk
+			if err != nil {
+				return
+			}
+			w.alloc.GlobalRequeueChunk(requeueChunk)
 			return
 		}
 
@@ -229,4 +247,25 @@ func (w *Worker) persistCheckpoint(chunk protocol.Chunk, report protocol.Checkpo
 	if err := w.store.RecordCheckpoint(context.Background(), w.id, chunk, report); err != nil {
 		w.logger.Printf("db insert checkpoint error: %v", err)
 	}
+}
+
+func (w *Worker) getFailedChunk() (protocol.Chunk, error) {
+	if w.activeChunk == nil {
+		return protocol.Chunk{}, fmt.Errorf("worker was not assigned chunk")
+	}
+
+	failed := *w.activeChunk
+	completed, err := w.store.GetLatestCheckpoint(context.Background(), w.id, failed.Id)
+	if err != nil {
+		w.logger.Printf("db read latest checkpoint error: %v", err)
+		return failed, nil
+	}
+
+	resumeStart := failed.Start + completed
+	if resumeStart > failed.End {
+		resumeStart = failed.End
+	}
+
+	failed.Start = resumeStart
+	return failed, nil
 }
