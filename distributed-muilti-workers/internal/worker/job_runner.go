@@ -9,17 +9,19 @@ import (
 )
 
 type JobRunner struct {
-	job   *protocol.JobResponse
-	alloc *chunk.ChunkAllocator
+	job        *protocol.JobResponse
+	alloc      *chunk.ChunkAllocator
+	onProgress func(tested uint64)
 }
 
-func NewJobRunner(job *protocol.JobResponse) JobRunner {
+func NewJobRunner(job *protocol.JobResponse, onProgress func(tested uint64)) JobRunner {
 	start, end := job.Chunk.Start, job.Chunk.End
 	alloc := chunk.NewChunkAllocator(1, start, end)
 
 	return JobRunner{
-		job:   job,
-		alloc: alloc,
+		job:        job,
+		alloc:      alloc,
+		onProgress: onProgress,
 	}
 }
 
@@ -44,6 +46,9 @@ func (j *JobRunner) Run(threads int) string {
 				password, err := j.processChunk(ch)
 				if err != nil {
 					continue
+				}
+				if j.onProgress != nil && ch.End > ch.Start {
+					j.onProgress(ch.End - ch.Start)
 				}
 
 				if password != "" {

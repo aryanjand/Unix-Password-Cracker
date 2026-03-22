@@ -17,7 +17,7 @@ const MAX_MISSED_HEARTBEATS = 2
 type Worker struct {
 	id            string
 	interval      int
-	checkpoint    int
+	checkpoint    uint64
 	conn          *tcp.Conn
 	alloc         *chunk.ChunkAllocator
 	shadow        protocol.ShadowEntry
@@ -27,7 +27,7 @@ type Worker struct {
 	foundResultCh chan<- string
 }
 
-func NewWorker(conn net.Conn, id string, shadow protocol.ShadowEntry, alloc *chunk.ChunkAllocator, interval int, checkpoint int, foundCh chan<- string, store persistence.Store, log *utils.Logger) *Worker {
+func NewWorker(conn net.Conn, id string, shadow protocol.ShadowEntry, alloc *chunk.ChunkAllocator, interval int, checkpoint uint64, foundCh chan<- string, store persistence.Store, log *utils.Logger) *Worker {
 	cc := tcp.NewConn(conn)
 	if store == nil {
 		store = persistence.NoopStore{}
@@ -97,12 +97,26 @@ func (w *Worker) HandleWorker() {
 					hb.CurrentRate,
 					hb.CurrentChunk,
 				)
-				active := protocol.Chunk{}
-				if w.activeChunk != nil {
-					active = *w.activeChunk
-				}
-				w.persistCheckpoint(active, *hb)
 				w.persistWorkerState(persistence.WorkerStateRunning, "")
+
+			case protocol.MsgCheckpointReport:
+				report := msg.CheckpointReport
+				if report == nil {
+					w.logger.Printf("checkpoint report payload missing")
+					continue
+				}
+
+				chunk := protocol.Chunk{}
+				if w.activeChunk != nil {
+					chunk = *w.activeChunk
+				}
+
+				w.logger.Printf(
+					"checkpoint report received | chunk: [id=%d start=%d end=%d] | completed=%d",
+					chunk.Id, chunk.Start, chunk.End, report.Completed,
+				)
+
+				w.persistCheckpoint(chunk, *report)
 
 			case protocol.MsgFound:
 				result := msg.Result
@@ -155,6 +169,7 @@ func (w *Worker) HandleWorker() {
 		case <-w.conn.Stop.Done():
 			w.persistTaskFailure("connection closed")
 			w.persistWorkerState(persistence.WorkerStateDisconnected, "")
+			// Todo: when we detect failure here, signal resign chunk
 			return
 		}
 
@@ -210,8 +225,8 @@ func (w *Worker) persistFailure(reason string) {
 	}
 }
 
-func (w *Worker) persistCheckpoint(chunk protocol.Chunk, hb protocol.HeartbeatResponse) {
-	if err := w.store.RecordCheckpoint(context.Background(), w.id, chunk, hb); err != nil {
+func (w *Worker) persistCheckpoint(chunk protocol.Chunk, report protocol.CheckpointReport) {
+	if err := w.store.RecordCheckpoint(context.Background(), w.id, chunk, report); err != nil {
 		w.logger.Printf("db insert checkpoint error: %v", err)
 	}
 }

@@ -49,7 +49,7 @@ func main() {
 		// 	job.StartIndex, job.EndIndex, generateNextPassword(job.StartIndex), generateNextPassword(job.EndIndex), workers)
 
 		// 3. Get a Job Runner
-		runner := worker.NewJobRunner(job)
+		runner := worker.NewJobRunner(job, w.RecordTested)
 
 		// 4. Run using multi threading
 		result = runner.Run(cfg.Threads)

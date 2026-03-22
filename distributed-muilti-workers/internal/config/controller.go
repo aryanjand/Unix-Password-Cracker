@@ -11,7 +11,7 @@ type Controller struct {
 	Port              int
 	Username          string
 	ShadowFilePath    string
-	Checkpoint        int
+	Checkpoint        uint64
 	PartitionSize     int
 	HeartbeatInterval int
 	MySQLDSN          string
@@ -29,7 +29,7 @@ func ParseController(args []string) (Controller, error) {
 	fs.StringVar(&cfg.Username, "u", "", "username")
 	fs.StringVar(&cfg.ShadowFilePath, "f", "", "shadow file path")
 	fs.IntVar(&cfg.HeartbeatInterval, "b", 0, "heartbeat interval in seconds")
-	fs.IntVar(&cfg.Checkpoint, "k", 0, "checkpoint interval measured in candidate password attempts")
+	fs.Uint64Var(&cfg.Checkpoint, "k", 0, "checkpoint interval measured in candidate password attempts")
 	fs.IntVar(&cfg.PartitionSize, "c", 1, "partition size for password space")
 	fs.IntVar(&cfg.PartitionSize, "s", 1, "partition size for password space")
 	fs.StringVar(&cfg.MySQLDSN, "d", defaultMySQLDSN(), "mysql dsn")

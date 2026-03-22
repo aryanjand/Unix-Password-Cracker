@@ -7,14 +7,15 @@ import (
 type Command string
 
 const (
-	MsgJobReq       Command = "jobReq"       // -> controller
-	MsgJobRes       Command = "jobRes"       // -> worker
-	MsgHeartbeatReq Command = "heartbeatReq" // -> worker
-	MsgHeartbeatRes Command = "heartbeatRes" // -> controller
-	MsgStop         Command = "stop"         // -> worker
-	MsgStopAck      Command = "stopAck"      // -> controller
-	MsgFound        Command = "Found"        // -> controller
-	MsgError        Command = "error"        // -> controller
+	MsgJobReq           Command = "jobReq"           // -> controller
+	MsgJobRes           Command = "jobRes"           // -> worker
+	MsgHeartbeatReq     Command = "heartbeatReq"     // -> worker
+	MsgHeartbeatRes     Command = "heartbeatRes"     // -> controller
+	MsgCheckpointReport Command = "checkpointReport" // -> controller
+	MsgStop             Command = "stop"             // -> worker
+	MsgStopAck          Command = "stopAck"          // -> controller
+	MsgFound            Command = "Found"            // -> controller
+	MsgError            Command = "error"            // -> controller
 
 )
 
@@ -26,6 +27,8 @@ type Message struct {
 
 	HeartbeatRequest  *HeartbeatRequest  `json:"heartbeat_request,omitempty"`
 	HeartbeatResponse *HeartbeatResponse `json:"heartbeat_response,omitempty"`
+
+	CheckpointReport *CheckpointReport `json:"checkpoint_report,omitempty"`
 
 	ErrorMessage string       `json:"error,omitempty"`
 	Result       *FoundResult `json:"result,omitempty"`
@@ -46,7 +49,7 @@ type ShadowEntry struct {
 type JobRequest struct{}
 type JobResponse struct {
 	Chunk       Chunk
-	Checkpoint  int
+	Checkpoint  uint64
 	ShadowEntry ShadowEntry
 }
 
@@ -65,9 +68,13 @@ type HeartbeatRequest struct {
 }
 
 type HeartbeatResponse struct {
-	DeltaTested   int64   `json:"delta_tested"`
-	TotalTested   int64   `json:"total_tested"`
+	DeltaTested   uint64  `json:"delta_tested"`
+	TotalTested   uint64  `json:"total_tested"`
 	ThreadsActive int64   `json:"threads_active"`
 	CurrentRate   float64 `json:"current_rate"`
 	CurrentChunk  string  `json:"current_chunk"`
+}
+
+type CheckpointReport struct {
+	Completed uint64
 }

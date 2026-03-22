@@ -6,6 +6,7 @@ import (
 	"runtime"
 	"sync"
 	"sync/atomic"
+	"time"
 
 	"github.com/aryanjand/Unix-Password-Cracker/internal/protocol"
 	"github.com/aryanjand/Unix-Password-Cracker/internal/transport/tcp"
@@ -14,8 +15,8 @@ import (
 
 type Worker struct {
 	Conn        *tcp.Conn
-	DeltaTested int64
-	TotalTested int64
+	DeltaTested uint64
+	TotalTested uint64
 
 	JobCh  chan *protocol.JobResponse
 	Wg     sync.WaitGroup
@@ -48,6 +49,8 @@ func (w *Worker) HandleWorker() {
 				if msg.JobResponse != nil {
 					w.JobCh <- msg.JobResponse
 					chunk = msg.JobResponse.Chunk
+					checkpoint := msg.JobResponse.Checkpoint
+					go w.monitorCheckpoint(chunk.Start, chunk.End, checkpoint)
 				}
 
 			case protocol.MsgHeartbeatReq:
@@ -57,12 +60,12 @@ func (w *Worker) HandleWorker() {
 					interval = req.Interval
 				}
 
-				delta := atomic.LoadInt64(&w.DeltaTested)
-				atomic.StoreInt64(&w.DeltaTested, 0)
+				delta := atomic.LoadUint64(&w.DeltaTested)
+				atomic.StoreUint64(&w.DeltaTested, 0)
 
 				hb := protocol.HeartbeatResponse{
 					DeltaTested:   delta,
-					TotalTested:   atomic.LoadInt64(&w.TotalTested),
+					TotalTested:   atomic.LoadUint64(&w.TotalTested),
 					ThreadsActive: int64(runtime.NumGoroutine()),
 					CurrentRate:   float64(delta) / float64(interval),
 					CurrentChunk:  fmt.Sprintf("%d-%d", chunk.Start, chunk.End),
@@ -87,4 +90,40 @@ func (w *Worker) HandleWorker() {
 
 func (w *Worker) Wait() {
 	w.Wg.Wait()
+}
+
+func (w *Worker) RecordTested(tested uint64) {
+	if tested == 0 {
+		return
+	}
+	atomic.AddUint64(&w.TotalTested, tested)
+	atomic.AddUint64(&w.DeltaTested, tested)
+}
+
+func (w *Worker) monitorCheckpoint(start uint64, end uint64, checkpoint uint64) {
+	ticker := time.NewTicker(25 * time.Millisecond)
+	defer ticker.Stop()
+
+	startTotal := atomic.LoadUint64(&w.TotalTested)
+	jobSize := end - start
+	next := checkpoint
+
+	for {
+		select {
+		case <-w.Conn.Stop.Done():
+			return
+		case <-ticker.C:
+			completed := atomic.LoadUint64(&w.TotalTested) - startTotal
+			for completed >= next {
+				w.Conn.Send <- protocol.Message{
+					Command:          protocol.MsgCheckpointReport,
+					CheckpointReport: &protocol.CheckpointReport{Completed: next},
+				}
+				next += checkpoint
+			}
+			if completed >= jobSize {
+				return
+			}
+		}
+	}
 }
