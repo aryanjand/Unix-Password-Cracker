@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"time"
 
 	"github.com/aryanjand/Unix-Password-Cracker/internal/config"
 	"github.com/aryanjand/Unix-Password-Cracker/internal/protocol"
@@ -39,8 +40,13 @@ func main() {
 		// 2. Stop the threads now
 		// 3. Send Found Results, Metrics
 
-		// 1. Sent a Job Request
-		w.Conn.Send <- protocol.Message{Command: protocol.MsgJobReq}
+		// 1. Sent a Job Request with last completed-job metrics (if any)
+		w.Conn.Send <- protocol.Message{
+			Command: protocol.MsgJobReq,
+			JobRequest: &protocol.JobRequest{
+				PreviousJobMetrics: w.TakeCompletedJobMetrics(),
+			},
+		}
 		log.Printf("-> sent %s", protocol.MsgJobReq)
 
 		// 2. Wait for the Job Response
@@ -52,7 +58,11 @@ func main() {
 		runner := worker.NewJobRunner(job, w.RecordTested)
 
 		// 4. Run using multi threading
+		computeStart := time.Now()
+		w.MarkComputeStart(computeStart)
 		result = runner.Run(cfg.Threads)
+		computeEnd := time.Now()
+		w.MarkComputeEnd(computeEnd)
 
 		if result != "" {
 			break
@@ -60,7 +70,14 @@ func main() {
 
 	}
 
-	w.Conn.Send <- protocol.Message{Command: protocol.MsgFound, Result: &protocol.FoundResult{Password: result}}
+	w.Conn.Send <- protocol.Message{
+		Command: protocol.MsgFound,
+		Result: &protocol.FoundResult{
+			Password:         result,
+			WorkerJobMetrics: w.TakeCompletedJobMetrics(),
+			WorkerSentAt:     time.Now(),
+		},
+	}
 
 	w.Wg.Wait()
 }
