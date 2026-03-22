@@ -32,6 +32,7 @@ type Message struct {
 
 	ErrorMessage string       `json:"error,omitempty"`
 	Result       *FoundResult `json:"result,omitempty"`
+	StopAck      *StopAck     `json:"stop_ack,omitempty"`
 }
 
 type Chunk struct {
@@ -46,7 +47,9 @@ type ShadowEntry struct {
 	FullHash string
 }
 
-type JobRequest struct{}
+type JobRequest struct {
+	PreviousJobMetrics *WorkerJobMetrics `json:"previous_job_metrics,omitempty"`
+}
 type JobResponse struct {
 	Chunk       Chunk
 	Checkpoint  uint64
@@ -54,13 +57,20 @@ type JobResponse struct {
 }
 
 type FoundResult struct {
-	Password string `json:"password"`
+	Password         string            `json:"password"`
+	WorkerJobMetrics *WorkerJobMetrics `json:"worker_job_metrics,omitempty"`
+	WorkerSentAt     time.Time         `json:"worker_sent_at"`
 }
 
-type WorkerMetrics struct {
-	TotalCrackingTimeNanos int64     `json:"total_cracking_time_ns"`
-	WorkerReceiveJobNanos  time.Time `json:"worker_receive_job_ns"`
-	WorkerSentResultsNanos time.Time `json:"worker_sent_results_ns"`
+type WorkerJobMetrics struct {
+	AssignmentReceivedAt time.Time `json:"assignment_received_at"`
+	ComputeStartedAt     time.Time `json:"compute_started_at"`
+	ComputeFinishedAt    time.Time `json:"compute_finished_at"`
+}
+
+type StopAck struct {
+	WorkerJobMetrics *WorkerJobMetrics `json:"worker_job_metrics,omitempty"`
+	WorkerSentAt     time.Time         `json:"worker_sent_at"`
 }
 
 type HeartbeatRequest struct {
@@ -76,5 +86,6 @@ type HeartbeatResponse struct {
 }
 
 type CheckpointReport struct {
-	Completed uint64
+	Completed  uint64    `json:"completed"`
+	ReportedAt time.Time `json:"reported_at"`
 }

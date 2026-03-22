@@ -19,6 +19,8 @@ import (
 
 func main() {
 	log := utils.NewLogger("[Controller]")
+	metrics := utils.NewMetrics()
+	controllerStartedAt := time.Now()
 
 	cfg, err := config.ParseController(os.Args[1:])
 	if err != nil {
@@ -36,10 +38,12 @@ func main() {
 	}()
 	log.Printf("connected to mysql")
 
+	parseStartedAt := time.Now()
 	shadow, err := controller.FindUserInShadow(cfg.ShadowFilePath, cfg.Username)
 	if err != nil {
 		log.Fatalf("failed to parse shadow file: %v", err)
 	}
+	metrics.ObserveControllerParsingTime(parseStartedAt, time.Now())
 
 	log.Printf("shadow entry:\n"+"\tUsername: %s\n"+"\tsettings: %s\n"+"\tfullHash: %s",
 		shadow.Username, shadow.Settings, shadow.FullHash,
@@ -103,6 +107,7 @@ func main() {
 				cfg.Checkpoint,
 				foundResultCh,
 				stateStore,
+				metrics,
 				workerLog,
 			)
 			manager.AddWorker(remoteAddr, *worker)
@@ -113,6 +118,8 @@ func main() {
 	log.Println("Found Result ", password)
 	_ = stateStore.UpsertWorkerState(context.Background(), "controller", persistence.WorkerStateCompleted, "")
 	manager.BroadcastMessage(protocol.MsgStop)
+	metrics.ObserveEndToEndRuntime(controllerStartedAt, time.Now())
+	metrics.PrintSummary()
 
 	time.Sleep(5 * time.Second)
 

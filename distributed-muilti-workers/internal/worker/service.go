@@ -18,16 +18,21 @@ type Worker struct {
 	DeltaTested uint64
 	TotalTested uint64
 
+	StopCh chan string
 	JobCh  chan *protocol.JobResponse
-	Wg     sync.WaitGroup
-	Logger *utils.Logger
+
+	Wg             sync.WaitGroup
+	Logger         *utils.Logger
+	metricsTracker *JobMetricsTracker
 }
 
 func NewWorker(conn net.Conn, log *utils.Logger) *Worker {
 	w := &Worker{
-		Conn:   tcp.NewConn(conn),
-		Logger: log,
-		JobCh:  make(chan *protocol.JobResponse, 1),
+		Logger:         log,
+		Conn:           tcp.NewConn(conn),
+		metricsTracker: &JobMetricsTracker{},
+		StopCh:         make(chan string, 1),
+		JobCh:          make(chan *protocol.JobResponse, 1),
 	}
 
 	w.Wg.Add(1)
@@ -47,6 +52,7 @@ func (w *Worker) HandleWorker() {
 			switch msg.Command {
 			case protocol.MsgJobRes:
 				if msg.JobResponse != nil {
+					w.markAssignmentReceived(time.Now())
 					w.JobCh <- msg.JobResponse
 					chunk = msg.JobResponse.Chunk
 					checkpoint := msg.JobResponse.Checkpoint
@@ -77,8 +83,16 @@ func (w *Worker) HandleWorker() {
 				}
 
 			case protocol.MsgStop:
-				w.Conn.Send <- protocol.Message{Command: protocol.MsgStopAck}
+				stopAt := time.Now()
+				w.Conn.Send <- protocol.Message{
+					Command: protocol.MsgStopAck,
+					StopAck: &protocol.StopAck{
+						WorkerJobMetrics: w.takeMetricsForStop(stopAt),
+						WorkerSentAt:     stopAt,
+					},
+				}
 				w.Conn.Close()
+				w.StopCh <- "stop"
 				return
 			}
 
@@ -101,6 +115,10 @@ func (w *Worker) RecordTested(tested uint64) {
 }
 
 func (w *Worker) monitorCheckpoint(start uint64, end uint64, checkpoint uint64) {
+	if checkpoint == 0 {
+		return
+	}
+
 	ticker := time.NewTicker(25 * time.Millisecond)
 	defer ticker.Stop()
 
@@ -116,8 +134,11 @@ func (w *Worker) monitorCheckpoint(start uint64, end uint64, checkpoint uint64) 
 			completed := atomic.LoadUint64(&w.TotalTested) - startTotal
 			for completed >= next {
 				w.Conn.Send <- protocol.Message{
-					Command:          protocol.MsgCheckpointReport,
-					CheckpointReport: &protocol.CheckpointReport{Completed: next},
+					Command: protocol.MsgCheckpointReport,
+					CheckpointReport: &protocol.CheckpointReport{
+						Completed:  next,
+						ReportedAt: time.Now(),
+					},
 				}
 				next += checkpoint
 			}
@@ -126,4 +147,24 @@ func (w *Worker) monitorCheckpoint(start uint64, end uint64, checkpoint uint64) 
 			}
 		}
 	}
+}
+
+func (w *Worker) MarkComputeStart(at time.Time) {
+	w.metricsTracker.markComputeStart(at)
+}
+
+func (w *Worker) MarkComputeEnd(at time.Time) {
+	w.metricsTracker.markComputeEnd(at)
+}
+
+func (w *Worker) TakeCompletedJobMetrics() *protocol.WorkerJobMetrics {
+	return w.metricsTracker.takeCompletedJobMetrics()
+}
+
+func (w *Worker) markAssignmentReceived(at time.Time) {
+	w.metricsTracker.markAssignmentReceived(at)
+}
+
+func (w *Worker) takeMetricsForStop(stopAt time.Time) *protocol.WorkerJobMetrics {
+	return w.metricsTracker.takeMetricsForStop(stopAt)
 }
