@@ -1,0 +1,40 @@
+services:
+  ubuntu:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: unix-password-cracker-ubuntu
+    working_dir: /app
+    volumes:
+      - ./:/app
+    environment:
+      MYSQL_DSN: cracker:cracker_password@tcp(mysql:3306)/password_cracker?parseTime=true
+    depends_on:
+      mysql:
+        condition: service_healthy
+    stdin_open: true
+    tty: true
+    command: bash
+
+  mysql:
+    image: mysql:8.4
+    container_name: unix-password-cracker-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root_password
+      MYSQL_DATABASE: password_cracker
+      MYSQL_USER: cracker
+      MYSQL_PASSWORD: cracker_password
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./distributed-muilti-workers/db/schema:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-u", "cracker", "-pcracker_password"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  mysql_data:
