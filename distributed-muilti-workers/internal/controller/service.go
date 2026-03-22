@@ -16,19 +16,21 @@ import (
 const MAX_MISSED_HEARTBEATS = 2
 
 type Worker struct {
-	id            string
-	interval      int
-	checkpoint    uint64
-	conn          *tcp.Conn
-	alloc         *chunk.ChunkAllocator
-	shadow        protocol.ShadowEntry
-	store         persistence.Store
-	activeChunk   *protocol.Chunk
-	logger        *utils.Logger
-	foundResultCh chan<- string
+	id                       string
+	interval                 int
+	checkpoint               uint64
+	conn                     *tcp.Conn
+	alloc                    *chunk.ChunkAllocator
+	shadow                   protocol.ShadowEntry
+	store                    persistence.Store
+	activeChunk              *protocol.Chunk
+	pendingDispatchStartedAt time.Time
+	metrics                  *utils.Metrics
+	logger                   *utils.Logger
+	foundResultCh            chan<- string
 }
 
-func NewWorker(conn net.Conn, id string, shadow protocol.ShadowEntry, alloc *chunk.ChunkAllocator, interval int, checkpoint uint64, foundCh chan<- string, store persistence.Store, log *utils.Logger) *Worker {
+func NewWorker(conn net.Conn, id string, shadow protocol.ShadowEntry, alloc *chunk.ChunkAllocator, interval int, checkpoint uint64, foundCh chan<- string, store persistence.Store, metrics *utils.Metrics, log *utils.Logger) *Worker {
 	cc := tcp.NewConn(conn)
 	if store == nil {
 		store = persistence.NoopStore{}
@@ -42,6 +44,7 @@ func NewWorker(conn net.Conn, id string, shadow protocol.ShadowEntry, alloc *chu
 		interval:      interval,
 		checkpoint:    checkpoint,
 		store:         store,
+		metrics:       metrics,
 		logger:        log,
 		foundResultCh: foundCh,
 	}
@@ -66,12 +69,18 @@ func (w *Worker) HandleWorker() {
 			switch msg.Command {
 
 			case protocol.MsgJobReq:
+				dispatchStartedAt := time.Now()
+				if msg.JobRequest != nil {
+					w.observeWorkerJobMetrics(msg.JobRequest.PreviousJobMetrics)
+				}
+
 				if w.activeChunk != nil {
 					w.persistTaskComplete("")
 				}
 
 				chunk := w.alloc.GetNewGlobalChunk()
 				w.activeChunk = &chunk
+				w.pendingDispatchStartedAt = dispatchStartedAt
 				w.conn.Send <- protocol.Message{
 					Command: protocol.MsgJobRes,
 					JobResponse: &protocol.JobResponse{
@@ -82,6 +91,9 @@ func (w *Worker) HandleWorker() {
 				}
 				w.persistTaskAssignment(chunk)
 				w.persistWorkerState(persistence.WorkerStateRunning, "")
+				if w.metrics != nil {
+					w.metrics.ObserveJobDispatchRegistrationOverhead(dispatchStartedAt, time.Now())
+				}
 
 			case protocol.MsgHeartbeatRes:
 				missedHeartbeats = 0
@@ -118,11 +130,22 @@ func (w *Worker) HandleWorker() {
 				)
 
 				w.persistCheckpoint(chunk, *report)
+				if w.metrics != nil {
+					w.metrics.ObserveCheckpointOverhead(report.ReportedAt, time.Now())
+					w.metrics.AddCheckpointObservation(
+						fmt.Sprintf("worker=%s chunk=%d completed=%d", w.id, chunk.Id, report.Completed),
+					)
+				}
 
 			case protocol.MsgFound:
+				resultReceivedAt := time.Now()
 				result := msg.Result
 				w.logger.Printf("<- received cracking result")
 				if result != nil {
+					if w.metrics != nil {
+						w.observeWorkerJobMetrics(result.WorkerJobMetrics)
+						w.metrics.ObserveResultReturnLatency(result.WorkerSentAt, resultReceivedAt)
+					}
 					w.foundResultCh <- result.Password
 					w.persistTaskComplete(result.Password)
 				} else {
@@ -150,6 +173,9 @@ func (w *Worker) HandleWorker() {
 				return
 
 			case protocol.MsgStopAck:
+				if msg.StopAck != nil {
+					w.observeWorkerJobMetrics(msg.StopAck.WorkerJobMetrics)
+				}
 				w.persistTaskFailure("worker stopped")
 				w.persistWorkerState(persistence.WorkerStateDisconnected, "")
 				w.conn.Close()
@@ -268,4 +294,21 @@ func (w *Worker) getFailedChunk() (protocol.Chunk, error) {
 
 	failed.Start = resumeStart
 	return failed, nil
+}
+
+func (w *Worker) observeWorkerJobMetrics(metrics *protocol.WorkerJobMetrics) {
+	if w.metrics == nil || metrics == nil {
+		return
+	}
+
+	if !w.pendingDispatchStartedAt.IsZero() {
+		units := uint64(0)
+		if w.activeChunk != nil && w.activeChunk.End > w.activeChunk.Start {
+			units = w.activeChunk.End - w.activeChunk.Start
+		}
+		w.metrics.ObserveWorkAssignmentOverhead(w.pendingDispatchStartedAt, metrics.AssignmentReceivedAt, units)
+		w.pendingDispatchStartedAt = time.Time{}
+	}
+
+	w.metrics.ObserveWorkerCrackingTime(metrics.ComputeStartedAt, metrics.ComputeFinishedAt)
 }
