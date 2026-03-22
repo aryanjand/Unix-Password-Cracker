@@ -18,18 +18,21 @@ type Worker struct {
 	DeltaTested uint64
 	TotalTested uint64
 
+	StopCh chan string
+	JobCh  chan *protocol.JobResponse
+
 	Wg             sync.WaitGroup
-	JobCh          chan *protocol.JobResponse
 	Logger         *utils.Logger
 	metricsTracker *JobMetricsTracker
 }
 
 func NewWorker(conn net.Conn, log *utils.Logger) *Worker {
 	w := &Worker{
-		Conn:           tcp.NewConn(conn),
 		Logger:         log,
-		JobCh:          make(chan *protocol.JobResponse, 1),
+		Conn:           tcp.NewConn(conn),
 		metricsTracker: &JobMetricsTracker{},
+		StopCh:         make(chan string, 1),
+		JobCh:          make(chan *protocol.JobResponse, 1),
 	}
 
 	w.Wg.Add(1)
@@ -89,6 +92,7 @@ func (w *Worker) HandleWorker() {
 					},
 				}
 				w.Conn.Close()
+				w.StopCh <- "stop"
 				return
 			}
 
