@@ -1,0 +1,113 @@
+Password Ace Worker 5
+===== Runtime Metrics Summary =====
+- controller-side parsing time: count=1 total=2.32254ms avg=2.32254ms min=2.32254ms max=2.32254ms
+- job dispatch/registration overhead: count=12 total=165.739977ms avg=13.811664ms min=9.608395ms max=18.171353ms
+- work assignment overhead: count=8 total=26.87676ms avg=3.359595ms min=318.662µs max=8.417674ms | per-unit=3359.59ns (units=8000)
+- worker cracking time (compute/search): count=8 total=10.118066571s avg=1.264758321s min=749.790687ms max=1.363170409s
+- result return latency (worker -> controller): count=1 total=345.193µs avg=345.193µs min=345.193µs max=345.193µs
+- checkpoint overhead observations: count=89 total=537.670143ms avg=6.041237ms min=5.05604ms max=16.212445ms
+- total end-to-end runtime: count=1 total=5.237835341s avg=5.237835341s min=5.237835341s max=5.237835341s
+
+Main results (controller + networking + checkpoint overhead)
+  controller overhead: 29.1993ms
+  networking overhead: 166.08517ms
+  checkpoint overhead: 537.670143ms (high impact, 10.27% of end-to-end)
+  combined overhead:   732.954613ms
+
+
+
+
+
+
+
+
+Password Bad Worker 5
+===== Runtime Metrics Summary =====
+- controller-side parsing time: count=1 total=601.609µs avg=601.609µs min=601.609µs max=601.609µs
+- job dispatch/registration overhead: count=17 total=264.206143ms avg=15.541537ms min=10.25756ms max=21.078567ms
+- work assignment overhead: count=13 total=54.897584ms avg=4.222891ms min=309.33µs max=8.903458ms | per-unit=4222.89ns (units=13000)
+- worker cracking time (compute/search): count=13 total=16.639945306s avg=1.279995792s min=845.580834ms max=1.362131229s
+- result return latency (worker -> controller): count=1 total=322.377µs avg=322.377µs min=322.377µs max=322.377µs
+- checkpoint overhead observations: count=145 total=946.18744ms avg=6.52543ms min=4.884339ms max=26.465023ms
+- total end-to-end runtime: count=1 total=5.927112001s avg=5.927112001s min=5.927112001s max=5.927112001s
+
+Main results (controller + networking + checkpoint overhead)
+  controller overhead: 55.499193ms
+  networking overhead: 264.52852ms
+  checkpoint overhead: 946.18744ms (high impact, 15.96% of end-to-end)
+  combined overhead:   1.266215153s
+
+
+
+
+
+
+
+
+Password Cab Worker 5
+===== Runtime Metrics Summary =====
+- controller-side parsing time: count=1 total=64.228µs avg=64.228µs min=64.228µs max=64.228µs
+- job dispatch/registration overhead: count=25 total=387.961768ms avg=15.51847ms min=9.918475ms max=22.889037ms
+- work assignment overhead: count=21 total=101.730757ms avg=4.844321ms min=421.843µs max=9.841224ms | per-unit=4844.32ns (units=21000)
+- worker cracking time (compute/search): count=21 total=27.867305175s avg=1.327014532s min=1.187360396s max=1.413773757s
+- result return latency (worker -> controller): count=1 total=346.456µs avg=346.456µs min=346.456µs max=346.456µs
+- checkpoint overhead observations: count=221 total=1.403875277s avg=6.352376ms min=4.926331ms max=22.233524ms
+- total end-to-end runtime: count=1 total=8.718654395s avg=8.718654395s min=8.718654395s max=8.718654395s
+
+Main results (controller + networking + checkpoint overhead)
+  controller overhead: 101.794985ms
+  networking overhead: 388.308224ms
+  checkpoint overhead: 1.403875277s (high impact, 16.10% of end-to-end)
+  combined overhead:   1.893978486s
+
+
+
+
+
+
+
+
+Password Dad Worker 5
+===== Runtime Metrics Summary =====
+- controller-side parsing time: count=1 total=42.936µs avg=42.936µs min=42.936µs max=42.936µs
+- job dispatch/registration overhead: count=28 total=444.798015ms avg=15.885643ms min=10.308168ms max=21.945728ms
+- work assignment overhead: count=24 total=122.823556ms avg=5.117648ms min=358.064µs max=11.857446ms | per-unit=5117.65ns (units=24000)
+- worker cracking time (compute/search): count=24 total=30.282363065s avg=1.261765127s min=161.532269ms max=1.33214042s
+- result return latency (worker -> controller): count=1 total=423.571µs avg=423.571µs min=423.571µs max=423.571µs
+- checkpoint overhead observations: count=249 total=1.532286255s avg=6.15376ms min=4.973883ms max=21.594235ms
+- total end-to-end runtime: count=1 total=9.418923719s avg=9.418923719s min=9.418923719s max=9.418923719s
+
+Main results (controller + networking + checkpoint overhead)
+  controller overhead: 122.866492ms
+  networking overhead: 445.221586ms
+  checkpoint overhead: 1.532286255s (high impact, 16.27% of end-to-end)
+  combined overhead:   2.100374333s
+
+
+
+
+
+
+
+
+
+Password Ear Worker 5
+===== Runtime Metrics Summary =====
+- controller-side parsing time: count=1 total=668.676µs avg=668.676µs min=668.676µs max=668.676µs
+- job dispatch/registration overhead: count=36 total=564.804312ms avg=15.689008ms min=10.180728ms max=23.91123ms
+- work assignment overhead: count=33 total=176.506411ms avg=5.348679ms min=352.545µs max=12.384866ms | per-unit=5348.68ns (units=33000)
+- worker cracking time (compute/search): count=33 total=42.984723304s avg=1.302567372s min=495.284614ms max=1.381738843s
+- result return latency (worker -> controller): count=1 total=364.479µs avg=364.479µs min=364.479µs max=364.479µs
+- checkpoint overhead observations: count=332 total=2.047913669s avg=6.168414ms min=4.808256ms max=30.891653ms
+- total end-to-end runtime: count=1 total=13.25300485s avg=13.25300485s min=13.25300485s max=13.25300485s
+
+Main results (controller + networking + checkpoint overhead)
+  controller overhead: 177.175087ms
+  networking overhead: 565.168791ms
+  checkpoint overhead: 2.047913669s (high impact, 15.45% of end-to-end)
+  combined overhead:   2.790257547s
+
+
+
+  
+
