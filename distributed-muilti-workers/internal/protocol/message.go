@@ -86,6 +86,7 @@ type HeartbeatResponse struct {
 }
 
 type CheckpointReport struct {
+	Chunk      Chunk     `json:"chunk"`
 	Completed  uint64    `json:"completed"`
 	ReportedAt time.Time `json:"reported_at"`
 }

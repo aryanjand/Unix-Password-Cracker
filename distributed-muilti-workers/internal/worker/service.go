@@ -56,7 +56,7 @@ func (w *Worker) HandleWorker() {
 					w.JobCh <- msg.JobResponse
 					chunk = msg.JobResponse.Chunk
 					checkpoint := msg.JobResponse.Checkpoint
-					go w.monitorCheckpoint(chunk.Start, chunk.End, checkpoint)
+					go w.monitorCheckpoint(chunk, checkpoint)
 				}
 
 			case protocol.MsgHeartbeatReq:
@@ -114,7 +114,7 @@ func (w *Worker) RecordTested(tested uint64) {
 	atomic.AddUint64(&w.DeltaTested, tested)
 }
 
-func (w *Worker) monitorCheckpoint(start uint64, end uint64, checkpoint uint64) {
+func (w *Worker) monitorCheckpoint(chunk protocol.Chunk, checkpoint uint64) {
 	if checkpoint == 0 {
 		return
 	}
@@ -123,7 +123,7 @@ func (w *Worker) monitorCheckpoint(start uint64, end uint64, checkpoint uint64) 
 	defer ticker.Stop()
 
 	startTotal := atomic.LoadUint64(&w.TotalTested)
-	jobSize := end - start
+	jobSize := chunk.End - chunk.Start
 	next := checkpoint
 
 	for {
@@ -136,6 +136,7 @@ func (w *Worker) monitorCheckpoint(start uint64, end uint64, checkpoint uint64) 
 				w.Conn.Send <- protocol.Message{
 					Command: protocol.MsgCheckpointReport,
 					CheckpointReport: &protocol.CheckpointReport{
+						Chunk:      chunk,
 						Completed:  next,
 						ReportedAt: time.Now(),
 					},
