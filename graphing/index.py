@@ -25,7 +25,6 @@ Main results (controller + networking + checkpoint overhead)
 
 
 
-
 Password Ace Worker 2
 ===== Runtime Metrics Summary =====
 - controller-side parsing time: count=1 total=547.973µs avg=547.973µs min=547.973µs max=547.973µs
@@ -41,8 +40,6 @@ Main results (controller + networking + checkpoint overhead)
   networking overhead: 146.315365ms
   checkpoint overhead: 499.801391ms (high impact, 7.88% of end-to-end)
   combined overhead:   681.987757ms
-
-
 
 
 
@@ -67,6 +64,25 @@ Main results (controller + networking + checkpoint overhead)
 
 
 
+Password Ace Worker 5
+===== Runtime Metrics Summary =====
+- controller-side parsing time: count=1 total=2.32254ms avg=2.32254ms min=2.32254ms max=2.32254ms
+- job dispatch/registration overhead: count=12 total=165.739977ms avg=13.811664ms min=9.608395ms max=18.171353ms
+- work assignment overhead: count=8 total=26.87676ms avg=3.359595ms min=318.662µs max=8.417674ms | per-unit=3359.59ns (units=8000)
+- worker cracking time (compute/search): count=8 total=10.118066571s avg=1.264758321s min=749.790687ms max=1.363170409s
+- result return latency (worker -> controller): count=1 total=345.193µs avg=345.193µs min=345.193µs max=345.193µs
+- checkpoint overhead observations: count=89 total=537.670143ms avg=6.041237ms min=5.05604ms max=16.212445ms
+- total end-to-end runtime: count=1 total=5.237835341s avg=5.237835341s min=5.237835341s max=5.237835341s
+
+Main results (controller + networking + checkpoint overhead)
+  controller overhead: 29.1993ms
+  networking overhead: 166.08517ms
+  checkpoint overhead: 537.670143ms (high impact, 10.27% of end-to-end)
+  combined overhead:   732.954613ms
+
+
+
+
 
 Password Bad Worker 1
 ===== Runtime Metrics Summary =====
@@ -87,8 +103,6 @@ Main results (controller + networking + checkpoint overhead)
 
 
 
-
-
 Password Bad Worker 2
 ===== Runtime Metrics Summary =====
 - controller-side parsing time: count=1 total=511.905µs avg=511.905µs min=511.905µs max=511.905µs
@@ -104,9 +118,6 @@ Main results (controller + networking + checkpoint overhead)
   networking overhead: 246.577516ms
   checkpoint overhead: 942.955194ms (high impact, 6.86% of end-to-end)
   combined overhead:   1.268727395s
-
-
-
 
 
 
@@ -131,6 +142,24 @@ Main results (controller + networking + checkpoint overhead)
 
 
 
+Password Bad Worker 5
+===== Runtime Metrics Summary =====
+- controller-side parsing time: count=1 total=601.609µs avg=601.609µs min=601.609µs max=601.609µs
+- job dispatch/registration overhead: count=17 total=264.206143ms avg=15.541537ms min=10.25756ms max=21.078567ms
+- work assignment overhead: count=13 total=54.897584ms avg=4.222891ms min=309.33µs max=8.903458ms | per-unit=4222.89ns (units=13000)
+- worker cracking time (compute/search): count=13 total=16.639945306s avg=1.279995792s min=845.580834ms max=1.362131229s
+- result return latency (worker -> controller): count=1 total=322.377µs avg=322.377µs min=322.377µs max=322.377µs
+- checkpoint overhead observations: count=145 total=946.18744ms avg=6.52543ms min=4.884339ms max=26.465023ms
+- total end-to-end runtime: count=1 total=5.927112001s avg=5.927112001s min=5.927112001s max=5.927112001s
+
+Main results (controller + networking + checkpoint overhead)
+  controller overhead: 55.499193ms
+  networking overhead: 264.52852ms
+  checkpoint overhead: 946.18744ms (high impact, 15.96% of end-to-end)
+  combined overhead:   1.266215153s
+
+
+
 
 
 Password Cab Worker 1
@@ -148,9 +177,6 @@ Main results (controller + networking + checkpoint overhead)
   networking overhead: 367.043995ms
   checkpoint overhead: 1.285117262s (moderate impact, 4.32% of end-to-end)
   combined overhead:   1.813327472s
-
-
-
 
 
 
@@ -173,9 +199,6 @@ Main results (controller + networking + checkpoint overhead)
 
 
 
-
-
-
 Password Cab Worker 3
 ===== Runtime Metrics Summary =====
 - controller-side parsing time: count=1 total=572.76µs avg=572.76µs min=572.76µs max=572.76µs
@@ -194,6 +217,21 @@ Main results (controller + networking + checkpoint overhead)
 
 
 
+Password Cab Worker 5
+===== Runtime Metrics Summary =====
+- controller-side parsing time: count=1 total=64.228µs avg=64.228µs min=64.228µs max=64.228µs
+- job dispatch/registration overhead: count=25 total=387.961768ms avg=15.51847ms min=9.918475ms max=22.889037ms
+- work assignment overhead: count=21 total=101.730757ms avg=4.844321ms min=421.843µs max=9.841224ms | per-unit=4844.32ns (units=21000)
+- worker cracking time (compute/search): count=21 total=27.867305175s avg=1.327014532s min=1.187360396s max=1.413773757s
+- result return latency (worker -> controller): count=1 total=346.456µs avg=346.456µs min=346.456µs max=346.456µs
+- checkpoint overhead observations: count=221 total=1.403875277s avg=6.352376ms min=4.926331ms max=22.233524ms
+- total end-to-end runtime: count=1 total=8.718654395s avg=8.718654395s min=8.718654395s max=8.718654395s
+
+Main results (controller + networking + checkpoint overhead)
+  controller overhead: 101.794985ms
+  networking overhead: 388.308224ms
+  checkpoint overhead: 1.403875277s (high impact, 16.10% of end-to-end)
+  combined overhead:   1.893978486s
 
 
 
@@ -217,10 +255,6 @@ Main results (controller + networking + checkpoint overhead)
 
 
 
-
-
-
-
 Password Dad Worker 2
 ===== Runtime Metrics Summary =====
 - controller-side parsing time: count=1 total=2.393118ms avg=2.393118ms min=2.393118ms max=2.393118ms
@@ -236,9 +270,6 @@ Main results (controller + networking + checkpoint overhead)
   networking overhead: 416.522075ms
   checkpoint overhead: 1.664555894s (high impact, 8.87% of end-to-end)
   combined overhead:   2.22601936s
-
-
-
 
 
 
@@ -261,6 +292,22 @@ Main results (controller + networking + checkpoint overhead)
 
 
 
+
+Password Dad Worker 5
+===== Runtime Metrics Summary =====
+- controller-side parsing time: count=1 total=42.936µs avg=42.936µs min=42.936µs max=42.936µs
+- job dispatch/registration overhead: count=28 total=444.798015ms avg=15.885643ms min=10.308168ms max=21.945728ms
+- work assignment overhead: count=24 total=122.823556ms avg=5.117648ms min=358.064µs max=11.857446ms | per-unit=5117.65ns (units=24000)
+- worker cracking time (compute/search): count=24 total=30.282363065s avg=1.261765127s min=161.532269ms max=1.33214042s
+- result return latency (worker -> controller): count=1 total=423.571µs avg=423.571µs min=423.571µs max=423.571µs
+- checkpoint overhead observations: count=249 total=1.532286255s avg=6.15376ms min=4.973883ms max=21.594235ms
+- total end-to-end runtime: count=1 total=9.418923719s avg=9.418923719s min=9.418923719s max=9.418923719s
+
+Main results (controller + networking + checkpoint overhead)
+  controller overhead: 122.866492ms
+  networking overhead: 445.221586ms
+  checkpoint overhead: 1.532286255s (high impact, 16.27% of end-to-end)
+  combined overhead:   2.100374333s
 
 
 
@@ -285,9 +332,6 @@ Main results (controller + networking + checkpoint overhead)
 
 
 
-
-
-
 Password Ear Worker 2
 ===== Runtime Metrics Summary =====
 - controller-side parsing time: count=1 total=558.155µs avg=558.155µs min=558.155µs max=558.155µs
@@ -307,12 +351,6 @@ Main results (controller + networking + checkpoint overhead)
 
 
 
-
-
-
-
-
-
 Password Ear Worker 3
 ===== Runtime Metrics Summary =====
 - controller-side parsing time: count=1 total=575.37µs avg=575.37µs min=575.37µs max=575.37µs
@@ -328,15 +366,29 @@ Main results (controller + networking + checkpoint overhead)
   networking overhead: 537.721552ms
   checkpoint overhead: 1.973302173s (high impact, 12.04% of end-to-end)
   combined overhead:   2.692957313s
+
+
+
+
+  Password Ear Worker 5
+===== Runtime Metrics Summary =====
+- controller-side parsing time: count=1 total=668.676µs avg=668.676µs min=668.676µs max=668.676µs
+- job dispatch/registration overhead: count=36 total=564.804312ms avg=15.689008ms min=10.180728ms max=23.91123ms
+- work assignment overhead: count=33 total=176.506411ms avg=5.348679ms min=352.545µs max=12.384866ms | per-unit=5348.68ns (units=33000)
+- worker cracking time (compute/search): count=33 total=42.984723304s avg=1.302567372s min=495.284614ms max=1.381738843s
+- result return latency (worker -> controller): count=1 total=364.479µs avg=364.479µs min=364.479µs max=364.479µs
+- checkpoint overhead observations: count=332 total=2.047913669s avg=6.168414ms min=4.808256ms max=30.891653ms
+- total end-to-end runtime: count=1 total=13.25300485s avg=13.25300485s min=13.25300485s max=13.25300485s
+
+Main results (controller + networking + checkpoint overhead)
+  controller overhead: 177.175087ms
+  networking overhead: 565.168791ms
+  checkpoint overhead: 2.047913669s (high impact, 15.45% of end-to-end)
+  combined overhead:   2.790257547s
+
 """
 
-
 def duration_to_ms(value: str) -> float:
-    """
-    Convert duration strings like:
-    32.729µs, 547.973us, 133.293429ms, 11.398773784s, 2.967175ms
-    into milliseconds.
-    """
     value = value.strip().replace("μ", "µ")
     m = re.match(r"([0-9]*\.?[0-9]+)\s*(ns|µs|us|ms|s)$", value)
     if not m:
@@ -362,20 +414,23 @@ def parse_impact_percent(text: str):
     return float(m.group(1)) if m else None
 
 
+def safe_slug(value: str) -> str:
+    value = value.strip().lower()
+    value = re.sub(r"[^a-z0-9]+", "_", value)
+    return value.strip("_")
+
+
 def parse_runs(raw_text: str):
     """
-    Returns:
-      summary_df: one row per Password / Number of Workers
-      metrics_df: one row per metric per Password / Number of Workers
+    Parse blocks like:
+      Password Ace Worker 1
+      ...
+    and normalize to:
+      password_label, number_of_workers, metrics...
     """
     lines = [line.rstrip() for line in raw_text.splitlines()]
 
-    # Example:
-    # Password Ace Worker 1
-    # -> password = Ace
-    # -> number_of_workers = 1
     run_header_re = re.compile(r"^Password\s+(.+?)\s+Worker\s+(\d+)\s*$")
-
     metric_re = re.compile(
         r"^- (.*?): count=(\d+)\s+total=([^\s]+)\s+avg=([^\s]+)\s+min=([^\s]+)\s+max=([^\s]+)(?:\s+\|\s+per-unit=([0-9]*\.?[0-9]+)ns\s+\(units=(\d+)\))?$"
     )
@@ -383,7 +438,7 @@ def parse_runs(raw_text: str):
     summary_rows = []
     metric_rows = []
 
-    current_password = None
+    current_label = None
     current_num_workers = None
     current_summary = None
 
@@ -396,36 +451,52 @@ def parse_runs(raw_text: str):
             if current_summary:
                 summary_rows.append(current_summary)
 
-            current_password = header_match.group(1).strip()
+            current_label = header_match.group(1).strip()
             current_num_workers = int(header_match.group(2))
 
             current_summary = {
-                "password": current_password,
+                "password_label": current_label,
+                "hash_algorithm": "bcrypt",
                 "number_of_workers": current_num_workers,
-                "controller_overhead_ms": None,
-                "networking_overhead_ms": None,
+                "controller_side_parsing_time_ms": None,
+                "job_dispatch_registration_overhead_ms": None,
+                "work_assignment_overhead_total_ms": None,
+                "work_assignment_overhead_per_unit_ns": None,
+                "worker_cracking_time_ms": None,
+                "result_return_latency_ms": None,
                 "checkpoint_overhead_ms": None,
                 "checkpoint_impact_pct": None,
+                "total_end_to_end_runtime_ms": None,
+                "controller_overhead_ms": None,
+                "networking_overhead_ms": None,
                 "combined_overhead_ms": None,
-                "end_to_end_runtime_ms": None,
+                "heartbeat_observation_count": None,
+                "heartbeat_avg_interval_metric_ms": None,
+                "checkpoint_observation_count": None,
+                "checkpoint_avg_ms": None,
+                "checkpoint_min_ms": None,
+                "checkpoint_max_ms": None,
             }
             i += 1
             continue
 
         metric_match = metric_re.match(line)
-        if metric_match and current_password is not None:
+        if metric_match and current_label is not None:
             metric_name = metric_match.group(1).strip()
             count = int(metric_match.group(2))
             total_ms = duration_to_ms(metric_match.group(3))
             avg_ms = duration_to_ms(metric_match.group(4))
             min_ms = duration_to_ms(metric_match.group(5))
             max_ms = duration_to_ms(metric_match.group(6))
-            per_unit_ns = float(metric_match.group(7)) if metric_match.group(7) else None
+            per_unit_ns = (
+                float(metric_match.group(7)) if metric_match.group(7) else None
+            )
             units = int(metric_match.group(8)) if metric_match.group(8) else None
 
             metric_rows.append(
                 {
-                    "password": current_password,
+                    "password_label": current_label,
+                    "hash_algorithm": "bcrypt",
                     "number_of_workers": current_num_workers,
                     "metric": metric_name,
                     "count": count,
@@ -438,19 +509,40 @@ def parse_runs(raw_text: str):
                 }
             )
 
-            if metric_name == "total end-to-end runtime":
-                current_summary["end_to_end_runtime_ms"] = total_ms
+            if metric_name == "controller-side parsing time":
+                current_summary["controller_side_parsing_time_ms"] = total_ms
+            elif metric_name == "job dispatch/registration overhead":
+                current_summary["job_dispatch_registration_overhead_ms"] = total_ms
+            elif metric_name == "work assignment overhead":
+                current_summary["work_assignment_overhead_total_ms"] = total_ms
+                current_summary["work_assignment_overhead_per_unit_ns"] = per_unit_ns
+            elif metric_name == "worker cracking time (compute/search)":
+                current_summary["worker_cracking_time_ms"] = total_ms
+            elif metric_name == "result return latency (worker -> controller)":
+                current_summary["result_return_latency_ms"] = total_ms
+            elif metric_name == "checkpoint overhead observations":
+                current_summary["checkpoint_overhead_ms"] = total_ms
+                current_summary["checkpoint_observation_count"] = count
+                current_summary["checkpoint_avg_ms"] = avg_ms
+                current_summary["checkpoint_min_ms"] = min_ms
+                current_summary["checkpoint_max_ms"] = max_ms
+            elif metric_name == "total end-to-end runtime":
+                current_summary["total_end_to_end_runtime_ms"] = total_ms
 
             i += 1
             continue
 
         if line.startswith("controller overhead:") and current_summary is not None:
-            current_summary["controller_overhead_ms"] = duration_to_ms(line.split(":", 1)[1].strip())
+            current_summary["controller_overhead_ms"] = duration_to_ms(
+                line.split(":", 1)[1].strip()
+            )
             i += 1
             continue
 
         if line.startswith("networking overhead:") and current_summary is not None:
-            current_summary["networking_overhead_ms"] = duration_to_ms(line.split(":", 1)[1].strip())
+            current_summary["networking_overhead_ms"] = duration_to_ms(
+                line.split(":", 1)[1].strip()
+            )
             i += 1
             continue
 
@@ -463,7 +555,9 @@ def parse_runs(raw_text: str):
             continue
 
         if line.startswith("combined overhead:") and current_summary is not None:
-            current_summary["combined_overhead_ms"] = duration_to_ms(line.split(":", 1)[1].strip())
+            current_summary["combined_overhead_ms"] = duration_to_ms(
+                line.split(":", 1)[1].strip()
+            )
             i += 1
             continue
 
@@ -475,48 +569,283 @@ def parse_runs(raw_text: str):
     summary_df = pd.DataFrame(summary_rows)
     metrics_df = pd.DataFrame(metric_rows)
 
-    summary_df["run_label"] = (
-        summary_df["password"] + " - " + summary_df["number_of_workers"].astype(str) + " workers"
-    )
-    metrics_df["run_label"] = (
-        metrics_df["password"] + " - " + metrics_df["number_of_workers"].astype(str) + " workers"
-    )
+    if not summary_df.empty:
+        summary_df["run_label"] = (
+            summary_df["password_label"]
+            + " - "
+            + summary_df["number_of_workers"].astype(str)
+            + " workers"
+        )
+
+    if not metrics_df.empty:
+        metrics_df["run_label"] = (
+            metrics_df["password_label"]
+            + " - "
+            + metrics_df["number_of_workers"].astype(str)
+            + " workers"
+        )
 
     return summary_df, metrics_df
 
 
-def save_summary_table_image(df: pd.DataFrame, output_path: str):
-    table_df = df[
-        [
-            "password",
-            "number_of_workers",
-            "end_to_end_runtime_ms",
-            "controller_overhead_ms",
-            "networking_overhead_ms",
-            "checkpoint_overhead_ms",
-            "combined_overhead_ms",
-            "checkpoint_impact_pct",
-        ]
-    ].copy()
+def add_prediction_columns(summary_df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Predict runtime at 5 workers using 1-3 worker measurements.
 
-    numeric_cols = [
-        "end_to_end_runtime_ms",
-        "controller_overhead_ms",
-        "networking_overhead_ms",
+    Model:
+        T_n = T_1 * (s + (1-s)/n)
+
+    where s is an estimated serial fraction derived from measured
+    combined overhead / total runtime across the 1-3 worker runs.
+    """
+    df = summary_df.copy()
+    df["serial_fraction_estimate"] = None
+    df["predicted_runtime_5_workers_ms"] = None
+    df["measured_runtime_5_workers_ms"] = None
+    df["prediction_error_pct"] = None
+
+    for password_label in df["password_label"].dropna().unique():
+        subset = df[df["password_label"] == password_label].copy()
+        subset = subset.sort_values("number_of_workers")
+
+        one_worker = subset[subset["number_of_workers"] == 1]
+        one_to_three = subset[subset["number_of_workers"].isin([1, 2, 3])]
+
+        if one_worker.empty or one_to_three.empty:
+            continue
+
+        t1 = float(one_worker.iloc[0]["total_end_to_end_runtime_ms"])
+
+        serial_candidates = []
+        for _, row in one_to_three.iterrows():
+            total = row.get("total_end_to_end_runtime_ms")
+            overhead = row.get("combined_overhead_ms")
+            if pd.notna(total) and pd.notna(overhead) and total > 0:
+                frac = overhead / total
+                frac = max(0.0, min(1.0, frac))
+                serial_candidates.append(frac)
+
+        if not serial_candidates:
+            continue
+
+        s = sum(serial_candidates) / len(serial_candidates)
+        predicted_5 = t1 * (s + (1.0 - s) / 5.0)
+
+        df.loc[df["password_label"] == password_label, "serial_fraction_estimate"] = s
+        df.loc[
+            df["password_label"] == password_label, "predicted_runtime_5_workers_ms"
+        ] = predicted_5
+
+        measured_5 = subset[subset["number_of_workers"] == 5]
+        if not measured_5.empty:
+            measured_val = float(measured_5.iloc[0]["total_end_to_end_runtime_ms"])
+            error_pct = ((measured_val - predicted_5) / predicted_5) * 100.0
+            df.loc[
+                df["password_label"] == password_label, "measured_runtime_5_workers_ms"
+            ] = measured_val
+            df.loc[df["password_label"] == password_label, "prediction_error_pct"] = (
+                error_pct
+            )
+
+    return df
+
+
+def save_required_measurements_table(summary_df: pd.DataFrame, output_path: Path):
+    cols = [
+        "password_label",
+        "hash_algorithm",
+        "number_of_workers",
+        "controller_side_parsing_time_ms",
+        "job_dispatch_registration_overhead_ms",
+        "work_assignment_overhead_total_ms",
+        "work_assignment_overhead_per_unit_ns",
+        "worker_cracking_time_ms",
+        "result_return_latency_ms",
         "checkpoint_overhead_ms",
-        "combined_overhead_ms",
         "checkpoint_impact_pct",
+        "total_end_to_end_runtime_ms",
+        "combined_overhead_ms",
     ]
-    for col in numeric_cols:
-        table_df[col] = table_df[col].round(3)
 
-    fig_height = max(4, 0.4 * len(table_df) + 1.5)
-    fig, ax = plt.subplots(figsize=(14, fig_height))
+    table_df = summary_df[cols].copy()
+
+    non_numeric_cols = ["password_label", "hash_algorithm"]
+    for col in table_df.columns:
+        if col not in non_numeric_cols:
+            table_df[col] = pd.to_numeric(table_df[col], errors="coerce")
+
+    numeric_cols = table_df.select_dtypes(include=["number"]).columns
+    table_df[numeric_cols] = table_df[numeric_cols].round(3)
+
+    fig_height = max(4, 0.38 * len(table_df) + 1.5)
+    fig, ax = plt.subplots(figsize=(18, fig_height))
     ax.axis("off")
 
     tbl = ax.table(
         cellText=table_df.values,
         colLabels=table_df.columns,
+        loc="center",
+        cellLoc="center",
+    )
+    tbl.auto_set_font_size(False)
+    tbl.set_fontsize(8)
+    tbl.scale(1, 1.25)
+
+    plt.tight_layout()
+    plt.savefig(output_path, dpi=200, bbox_inches="tight")
+    plt.close()
+
+def create_per_experiment_scaling_charts(summary_df: pd.DataFrame, out_dir: Path):
+    """
+    Separate graphs per experiment label, with x-axis = number_of_workers.
+    """
+    for label in sorted(summary_df["password_label"].dropna().unique()):
+        sub = summary_df[summary_df["password_label"] == label].copy()
+        sub = sub.sort_values("number_of_workers")
+        slug = safe_slug(label)
+
+        x = sub["number_of_workers"].astype(str)
+
+        plt.figure(figsize=(8, 5))
+        plt.bar(x, sub["total_end_to_end_runtime_ms"])
+        plt.xlabel("Number of Workers")
+        plt.ylabel("End-to-End Runtime (ms)")
+        plt.title(f"Scaling Runtime - {label}")
+        plt.tight_layout()
+        plt.savefig(out_dir / f"runtime_scaling_{slug}.png", dpi=200)
+        plt.close()
+
+        plt.figure(figsize=(8, 5))
+        idx = range(len(sub))
+        c = sub["controller_overhead_ms"].fillna(0)
+        n = sub["networking_overhead_ms"].fillna(0)
+        ck = sub["checkpoint_overhead_ms"].fillna(0)
+
+        plt.bar(idx, c, label="Controller")
+        plt.bar(idx, n, bottom=c, label="Networking")
+        plt.bar(idx, ck, bottom=c + n, label="Checkpoint")
+        plt.xticks(list(idx), x)
+        plt.xlabel("Number of Workers")
+        plt.ylabel("Overhead (ms)")
+        plt.title(f"Overhead Breakdown - {label}")
+        plt.legend()
+        plt.tight_layout()
+        plt.savefig(out_dir / f"overhead_breakdown_{slug}.png", dpi=200)
+        plt.close()
+
+        plt.figure(figsize=(8, 5))
+        plt.bar(x, sub["worker_cracking_time_ms"])
+        plt.xlabel("Number of Workers")
+        plt.ylabel("Worker Cracking Time Total (ms)")
+        plt.title(f"Worker Cracking Time - {label}")
+        plt.tight_layout()
+        plt.savefig(out_dir / f"worker_cracking_time_{slug}.png", dpi=200)
+        plt.close()
+
+        plt.figure(figsize=(8, 5))
+        plt.bar(x, sub["checkpoint_impact_pct"])
+        plt.xlabel("Number of Workers")
+        plt.ylabel("Checkpoint Impact (%)")
+        plt.title(f"Checkpoint Impact - {label}")
+        plt.tight_layout()
+        plt.savefig(out_dir / f"checkpoint_impact_{slug}.png", dpi=200)
+        plt.close()
+
+
+def create_prediction_validation_chart(summary_df: pd.DataFrame, out_dir: Path):
+    rows = []
+    for password_label in sorted(summary_df["password_label"].dropna().unique()):
+        subset = summary_df[summary_df["password_label"] == password_label]
+        pred_vals = subset["predicted_runtime_5_workers_ms"].dropna().unique()
+        meas_vals = subset["measured_runtime_5_workers_ms"].dropna().unique()
+
+        if len(pred_vals) == 0:
+            continue
+
+        rows.append(
+            {
+                "password_label": password_label,
+                "predicted_runtime_5_workers_ms": float(pred_vals[0]),
+                "measured_runtime_5_workers_ms": (
+                    float(meas_vals[0]) if len(meas_vals) else None
+                ),
+            }
+        )
+
+    if not rows:
+        return
+
+    df = pd.DataFrame(rows).sort_values("password_label").reset_index(drop=True)
+
+    x = range(len(df))
+    width = 0.35
+
+    plt.figure(figsize=(10, 5))
+    plt.bar(
+        [i - width / 2 for i in x],
+        df["predicted_runtime_5_workers_ms"],
+        width=width,
+        label="Predicted 5 workers",
+    )
+
+    measured_vals = df["measured_runtime_5_workers_ms"].fillna(0)
+    plt.bar(
+        [i + width / 2 for i in x],
+        measured_vals,
+        width=width,
+        label="Measured 5 workers",
+    )
+
+    plt.xticks(list(x), df["password_label"], rotation=30, ha="right")
+    plt.ylabel("Runtime (ms)")
+    plt.title("Predicted vs Measured Runtime at 5 Workers")
+    plt.legend()
+    plt.tight_layout()
+    plt.savefig(out_dir / "prediction_vs_measured_5_workers.png", dpi=200)
+    plt.close()
+
+
+def save_prediction_table(summary_df: pd.DataFrame, output_path: Path):
+    pred_df = (
+        summary_df[
+            [
+                "password_label",
+                "hash_algorithm",
+                "serial_fraction_estimate",
+                "predicted_runtime_5_workers_ms",
+                "measured_runtime_5_workers_ms",
+                "prediction_error_pct",
+            ]
+        ]
+        .drop_duplicates(subset=["password_label"])
+        .sort_values("password_label")
+        .reset_index(drop=True)
+    )
+
+    pred_df = pred_df.dropna(
+        how="all",
+        subset=[
+            "serial_fraction_estimate",
+            "predicted_runtime_5_workers_ms",
+            "measured_runtime_5_workers_ms",
+            "prediction_error_pct",
+        ],
+    )
+
+    if pred_df.empty:
+        return
+
+    for col in pred_df.columns:
+        if col not in ("password_label", "hash_algorithm"):
+            pred_df[col] = pred_df[col].round(3)
+
+    fig_height = max(3, 0.5 * len(pred_df) + 1.2)
+    fig, ax = plt.subplots(figsize=(12, fig_height))
+    ax.axis("off")
+
+    tbl = ax.table(
+        cellText=pred_df.values,
+        colLabels=pred_df.columns,
         loc="center",
         cellLoc="center",
     )
@@ -529,56 +858,8 @@ def save_summary_table_image(df: pd.DataFrame, output_path: str):
     plt.close()
 
 
-def create_charts(summary_df: pd.DataFrame, out_dir: Path):
-    plot_df = summary_df.sort_values(["password", "number_of_workers"]).copy()
-
-    # 1) End-to-end runtime bar chart
-    plt.figure(figsize=(14, 6))
-    plt.bar(plot_df["run_label"], plot_df["end_to_end_runtime_ms"])
-    plt.xticks(rotation=60, ha="right")
-    plt.ylabel("Runtime (ms)")
-    plt.title("End-to-End Runtime by Password / Number of Workers")
-    plt.tight_layout()
-    plt.savefig(out_dir / "end_to_end_runtime_bar.png", dpi=200)
-    plt.close()
-
-    # 2) Overhead breakdown stacked bar chart
-    plt.figure(figsize=(14, 6))
-    x = range(len(plot_df))
-    c = plot_df["controller_overhead_ms"].fillna(0)
-    n = plot_df["networking_overhead_ms"].fillna(0)
-    ck = plot_df["checkpoint_overhead_ms"].fillna(0)
-
-    plt.bar(x, c, label="Controller")
-    plt.bar(x, n, bottom=c, label="Networking")
-    plt.bar(x, ck, bottom=c + n, label="Checkpoint")
-
-    plt.xticks(list(x), plot_df["run_label"], rotation=60, ha="right")
-    plt.ylabel("Overhead (ms)")
-    plt.title("Overhead Breakdown by Password / Number of Workers")
-    plt.legend()
-    plt.tight_layout()
-    plt.savefig(out_dir / "overhead_breakdown_stacked_bar.png", dpi=200)
-    plt.close()
-
-    # 3) Average runtime by password
-    avg_df = (
-        plot_df.groupby("password", as_index=False)["end_to_end_runtime_ms"]
-        .mean()
-        .sort_values("end_to_end_runtime_ms")
-    )
-
-    plt.figure(figsize=(10, 5))
-    plt.bar(avg_df["password"], avg_df["end_to_end_runtime_ms"])
-    plt.ylabel("Average Runtime (ms)")
-    plt.title("Average End-to-End Runtime by Password")
-    plt.tight_layout()
-    plt.savefig(out_dir / "avg_runtime_by_password_bar.png", dpi=200)
-    plt.close()
-
-
 def main():
-    out_dir = Path("normalized_output")
+    out_dir = Path("assignment_output_workers_5")
     out_dir.mkdir(exist_ok=True)
 
     summary_df, metrics_df = parse_runs(RAW_TEXT)
@@ -586,30 +867,40 @@ def main():
     if summary_df.empty:
         raise RuntimeError("No runs were parsed. Check RAW_TEXT formatting.")
 
-    summary_df = summary_df.sort_values(["password", "number_of_workers"]).reset_index(drop=True)
-    metrics_df = metrics_df.sort_values(["password", "number_of_workers", "metric"]).reset_index(drop=True)
+    summary_df = summary_df.sort_values(
+        ["password_label", "number_of_workers"]
+    ).reset_index(drop=True)
 
-    summary_csv = out_dir / "run_summary.csv"
-    metrics_csv = out_dir / "metric_details.csv"
+    metrics_df = metrics_df.sort_values(
+        ["password_label", "number_of_workers", "metric"]
+    ).reset_index(drop=True)
 
-    summary_df.to_csv(summary_csv, index=False)
-    metrics_df.to_csv(metrics_csv, index=False)
+    summary_df = add_prediction_columns(summary_df)
 
-    create_charts(summary_df, out_dir)
-    save_summary_table_image(summary_df, out_dir / "run_summary_table.png")
+    summary_df.to_csv(out_dir / "assignment_summary.csv", index=False)
+    metrics_df.to_csv(out_dir / "assignment_metric_details.csv", index=False)
 
-    print(f"Saved: {summary_csv}")
-    print(f"Saved: {metrics_csv}")
-    print(f"Saved: {out_dir / 'end_to_end_runtime_bar.png'}")
-    print(f"Saved: {out_dir / 'overhead_breakdown_stacked_bar.png'}")
-    print(f"Saved: {out_dir / 'avg_runtime_by_password_bar.png'}")
-    print(f"Saved: {out_dir / 'run_summary_table.png'}")
+    save_required_measurements_table(
+        summary_df,
+        out_dir / "required_measurements_table.png",
+    )
 
-    print("\nPreview: run_summary.csv")
+    create_per_experiment_scaling_charts(summary_df, out_dir)
+    create_prediction_validation_chart(summary_df, out_dir)
+    save_prediction_table(summary_df, out_dir / "prediction_table.png")
+
+    print(f"Saved: {out_dir / 'assignment_summary.csv'}")
+    print(f"Saved: {out_dir / 'assignment_metric_details.csv'}")
+    print(f"Saved: {out_dir / 'required_measurements_table.png'}")
+    print(f"Saved: per-experiment scaling charts in {out_dir}")
+
+    if (out_dir / "prediction_table.png").exists():
+        print(f"Saved: {out_dir / 'prediction_table.png'}")
+    if (out_dir / "prediction_vs_measured_5_workers.png").exists():
+        print(f"Saved: {out_dir / 'prediction_vs_measured_5_workers.png'}")
+
+    print("\nPreview: assignment_summary.csv")
     print(summary_df.head(10).to_string(index=False))
-
-    print("\nPreview: metric_details.csv")
-    print(metrics_df.head(10).to_string(index=False))
 
 
 if __name__ == "__main__":
