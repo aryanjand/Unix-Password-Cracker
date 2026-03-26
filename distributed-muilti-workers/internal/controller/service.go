@@ -119,8 +119,10 @@ func (w *Worker) HandleWorker() {
 					continue
 				}
 
-				chunk := protocol.Chunk{}
-				if w.activeChunk != nil {
+				// Prefer chunk identity from the report itself to avoid attributing
+				// late checkpoint messages to a newly assigned active chunk.
+				chunk := report.Chunk
+				if chunk.End <= chunk.Start && chunk.Id == 0 && w.activeChunk != nil {
 					chunk = *w.activeChunk
 				}
 
