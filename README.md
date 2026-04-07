@@ -47,7 +47,6 @@ flowchart LR
     R --> C
 
     C --> M["Runtime Metrics Summary"]
-    M --> G["graphing/ CSV + PNG Artifacts"]
 ```
 
 ## Core Features
@@ -175,6 +174,26 @@ Only a few representative images are embedded below. The full set lives in `grap
   <img src="graphing/assignment_output_workers_5/checkpoint_impact_bad.png" width="48%" alt="Checkpoint impact for Bad">
 </p>
 
+## Benchmarking Workflow
+
+The graphing pipeline is not wired directly into the controller or workers. The runtime metrics are printed to the CLI, then copied into the `graphing/` inputs and processed offline.
+
+```mermaid
+flowchart LR
+    C["Controller CLI Output"]
+    M["Runtime Metrics Summary"]
+    X["Manual Copy / Paste"]
+    R["graphing/results and graphing/results-5-workers"]
+    P["graphing/index.py"]
+    O["CSV Summaries + PNG Charts"]
+
+    C --> M
+    M --> X
+    X --> R
+    R --> P
+    P --> O
+```
+
 ## Generating the Graphs
 
 The plotting dependencies live in `graphing/requirements.txt`.
@@ -186,6 +205,13 @@ source .venv/bin/activate
 pip install -r requirements.txt
 python index.py
 ```
+
+Current workflow:
+
+1. Run benchmark scenarios and capture the printed runtime summaries from the CLI.
+2. Manually copy those results into `graphing/results` or `graphing/results-5-workers`.
+3. Run `graphing/index.py`.
+4. Review the generated CSV and PNG outputs.
 
 The current script writes outputs into `assignment_output_workers_5/`. The repo also includes pre-generated `assignment_output_workers_3/` artifacts.
 
