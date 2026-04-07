@@ -260,9 +260,8 @@ Current persistence is MySQL-based. The unchecked items below are the next infra
 - [x] Persisted worker, task, failure, and checkpoint tracking
 - [x] Benchmark summaries, CSV exports, and plotted diagrams
 - [ ] `/metrics` endpoint exposing `jobs_queued`, `jobs_running`, `jobs_completed`, per-worker rate, aggregate hashes/sec, and active workers
-- [ ] Prometheus-style metrics formatting for observability and throughput monitoring
-- [ ] Persistent job and chunk store in SQLite for restart-safe durability
 - [ ] Controller crash recovery from persisted job/chunk state
+- [ ] Add unit tests for controller, worker, chunk allocation, and recovery logic
 
 ## Caveats
 
