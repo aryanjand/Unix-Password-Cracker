@@ -2,7 +2,7 @@
 
 ![Go](https://img.shields.io/badge/Go-1.25+-00ADD8?logo=go&logoColor=white)
 ![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white)
-![MySQL](https://img.shields.io/badge/MySQL-State%20Store-4479A1?logo=mysql&logoColor=white)
+![SQLite](https://img.shields.io/badge/SQLite-State%20Store-003B57?logo=sqlite&logoColor=white)
 ![Linux](https://img.shields.io/badge/Runtime-Linux%20%2B%20CGO-FCC624?logo=linux&logoColor=black)
 
 Distributed controller/worker system for cracking Unix shadow hashes by partitioning the password space across multiple workers, tracking progress with checkpoints, and persisting worker/task state for failure handling.
@@ -16,7 +16,7 @@ This project is best understood as a distributed systems and infrastructure exer
 - Treats password cracking as a coordination problem instead of a single-process script.
 - Splits the search space across multiple workers and multiple goroutines per worker.
 - Detects failures with heartbeats and resumes interrupted work from the latest checkpoint.
-- Persists workers, tasks, failures, and checkpoints in MySQL.
+- Persists workers, tasks, failures, and checkpoints in a local SQLite file (WAL mode).
 - Captures runtime measurements and turns benchmark logs into CSVs and diagrams.
 
 ## Architecture
@@ -38,7 +38,7 @@ flowchart LR
     WN --> H
     H --> C
 
-    C --> D["MySQL State Store"]
+    C --> D["SQLite State Store"]
     D --> T["workers / tasks / failures / checkpoints"]
 
     W1 --> R["Found Password"]
@@ -58,42 +58,48 @@ flowchart LR
 - Linux `crypt_r` hash verification for real shadow-hash matching
 - Worker heartbeat monitoring and timeout-triggered chunk requeue
 - Checkpoint reporting and checkpoint-based resume on worker failure
-- MySQL-backed persistence for worker state, task assignment/completion, failures, and checkpoints
+- SQLite-backed persistence for worker state, task assignment/completion, failures, and checkpoints
 - Runtime metric collection for parsing, dispatch, compute, checkpoint, networking, and total runtime
 
 ## Quick Start
 
-### 1. Start the environment
+No database or container to stand up first — the controller persists to a local SQLite
+file. Run it directly with the Go toolchain:
+
+### 1. Move into the Go module
 
 ```bash
-docker compose up --build -d mysql ubuntu
-docker compose exec ubuntu bash
-```
-
-The container already includes `golang`, `tmux`, `git`, and `curl`.
-
-### 2. Move into the Go module
-
-```bash
-cd /app/distributed-muilti-workers
+cd distributed-muilti-workers
 ```
 
 Note: the Go module lives under `distributed-muilti-workers/`.
 
-### 3. Start the controller
+Docker remains a supported alternative if you'd rather not install Go locally:
+
+```bash
+docker compose up --build -d ubuntu
+docker compose exec ubuntu bash
+cd /app/distributed-muilti-workers
+```
+
+The container already includes `golang`, `tmux`, `git`, and `curl`.
+
+### 2. Start the controller
 
 ```bash
 go run ./cmd/controller \
   -p 8080 \
   -f testdata/shadow/shadow_ACE_bcrypt \
-  -u ACE \
+  -u aryan \
   -b 1 \
   -c 1000 \
   -k 100 \
   --reset
 ```
 
-### 4. Start workers in separate shells or tmux panes
+This creates (or resets) a `cracker.db` SQLite file in the current directory.
+
+### 3. Start workers in separate shells or tmux panes
 
 ```bash
 go run ./cmd/worker -c 127.0.0.1 -p 8080 -t 4
@@ -106,7 +112,7 @@ Launch 3-5 workers to see the distributed behavior and compare runtimes.
 ### Controller
 
 ```bash
-go run ./cmd/controller -p PORT -f SHADOW_FILE -u USERNAME -b HEARTBEAT_SECONDS -c PARTITION_SIZE -k CHECKPOINT_INTERVAL [-d MYSQL_DSN] [--reset]
+go run ./cmd/controller -p PORT -f SHADOW_FILE -u USERNAME -b HEARTBEAT_SECONDS -c PARTITION_SIZE -k CHECKPOINT_INTERVAL [-d SQLITE_DB_PATH] [--reset]
 ```
 
 - `-p`: controller port
@@ -115,7 +121,7 @@ go run ./cmd/controller -p PORT -f SHADOW_FILE -u USERNAME -b HEARTBEAT_SECONDS 
 - `-b`: heartbeat interval in seconds
 - `-c` or `-s`: partition size for the password space
 - `-k`: checkpoint interval measured in candidate attempts
-- `-d`: MySQL DSN
+- `-d`: SQLite database file path (default `cracker.db`, override with the `SQLITE_DB_PATH` env var)
 - `--reset`: drops and recreates tracking tables before startup
 
 ### Worker
@@ -217,7 +223,7 @@ The current script writes outputs into `assignment_output_workers_5/`. The repo 
 
 ## Persistence Model
 
-Today, the persistence layer is MySQL-backed and records:
+Today, the persistence layer is a local SQLite file (WAL mode, single writer) and records:
 
 - `workers`: worker state and last heartbeat updates
 - `tasks`: chunk assignments, completion state, and found password
@@ -233,7 +239,6 @@ That gives the controller enough state to requeue failed work from the latest ch
 ├── distributed-muilti-workers/
 │   ├── cmd/controller
 │   ├── cmd/worker
-│   ├── db/schema
 │   ├── internal/controller
 │   ├── internal/worker
 │   ├── internal/storage
@@ -250,7 +255,7 @@ That gives the controller enough state to requeue failed work from the latest ch
 
 ## Project Checklist
 
-Current persistence is MySQL-based. The unchecked items below are the next infrastructure upgrades.
+Current persistence is SQLite-based. The unchecked items below are the next infrastructure upgrades.
 
 - [x] Distributed controller/worker execution over TCP
 - [x] Shadow parsing and hash-target loading
