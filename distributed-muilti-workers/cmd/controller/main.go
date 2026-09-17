@@ -27,16 +27,16 @@ func main() {
 		log.Fatal(err)
 	}
 
-	stateStore, err := storage.NewMySQLStore(cfg.MySQLDSN, cfg.Reset)
+	stateStore, err := storage.NewSQLiteStore(cfg.DBPath, cfg.Reset)
 	if err != nil {
-		log.Fatalf("failed to connect mysql: %v", err)
+		log.Fatalf("failed to open sqlite store: %v", err)
 	}
 	defer func() {
 		if err := stateStore.Close(); err != nil {
-			log.Printf("failed to close mysql store: %v", err)
+			log.Printf("failed to close sqlite store: %v", err)
 		}
 	}()
-	log.Printf("connected to mysql")
+	log.Printf("opened sqlite store at %s", cfg.DBPath)
 
 	parseStartedAt := time.Now()
 	shadow, err := controller.FindUserInShadow(cfg.ShadowFilePath, cfg.Username)
