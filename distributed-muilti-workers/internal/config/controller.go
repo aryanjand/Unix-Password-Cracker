@@ -14,11 +14,11 @@ type Controller struct {
 	Checkpoint        uint64
 	PartitionSize     int
 	HeartbeatInterval int
-	MySQLDSN          string
+	DBPath            string
 	Reset             bool
 }
 
-const ControllerUsage = "Usage: controller -p PORT -f SHADOW_FILE -u USERNAME -b HEARTBEAT_SECONDS -c PARTITION_SIZE -k CHECKPOINT_INTERVAL [-d MYSQL_DSN] [-reset]"
+const ControllerUsage = "Usage: controller -p PORT -f SHADOW_FILE -u USERNAME -b HEARTBEAT_SECONDS -c PARTITION_SIZE -k CHECKPOINT_INTERVAL [-d SQLITE_DB_PATH] [-reset]"
 
 func ParseController(args []string) (Controller, error) {
 	var cfg Controller
@@ -32,8 +32,8 @@ func ParseController(args []string) (Controller, error) {
 	fs.Uint64Var(&cfg.Checkpoint, "k", 0, "checkpoint interval measured in candidate password attempts")
 	fs.IntVar(&cfg.PartitionSize, "c", 1, "partition size for password space")
 	fs.IntVar(&cfg.PartitionSize, "s", 1, "partition size for password space")
-	fs.StringVar(&cfg.MySQLDSN, "d", defaultMySQLDSN(), "mysql dsn")
-	fs.BoolVar(&cfg.Reset, "reset", false, "reset persisted mysql tracking state before startup")
+	fs.StringVar(&cfg.DBPath, "d", defaultDBPath(), "sqlite database file path")
+	fs.BoolVar(&cfg.Reset, "reset", false, "reset persisted tracking state before startup")
 
 	if err := fs.Parse(args); err != nil {
 		return Controller{}, err
@@ -43,7 +43,7 @@ func ParseController(args []string) (Controller, error) {
 		cfg.Checkpoint <= 0 ||
 		cfg.PartitionSize <= 0 ||
 		cfg.HeartbeatInterval <= 0 ||
-		cfg.MySQLDSN == "" ||
+		cfg.DBPath == "" ||
 		cfg.ShadowFilePath == "" ||
 		cfg.Username == "" {
 		return Controller{}, fmt.Errorf(ControllerUsage)
@@ -52,10 +52,10 @@ func ParseController(args []string) (Controller, error) {
 	return cfg, nil
 }
 
-func defaultMySQLDSN() string {
-	const fallback = "cracker:cracker_password@tcp(127.0.0.1:3306)/password_cracker?parseTime=true"
-	if dsn := os.Getenv("MYSQL_DSN"); dsn != "" {
-		return dsn
+func defaultDBPath() string {
+	const fallback = "cracker.db"
+	if path := os.Getenv("SQLITE_DB_PATH"); path != "" {
+		return path
 	}
 	return fallback
 }
