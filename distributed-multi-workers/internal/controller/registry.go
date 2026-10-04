@@ -14,7 +14,7 @@ type WorkerManager struct {
 	shutdownWG sync.WaitGroup
 }
 
-func NewWorkerManger() *WorkerManager {
+func NewWorkerManager() *WorkerManager {
 	return &WorkerManager{
 		workers: make(map[string]Worker),
 	}

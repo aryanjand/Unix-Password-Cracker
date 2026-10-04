@@ -59,7 +59,7 @@ func main() {
 	alloc := chunk.NewChunkAllocator(uint64(cfg.PartitionSize), 0, 0)
 	listenerCtx, listenerCancel := context.WithCancel(context.Background())
 
-	manager := controller.NewWorkerManger()
+	manager := controller.NewWorkerManager()
 	foundResultCh := make(chan string)
 	connCh := make(chan net.Conn)
 	var password string

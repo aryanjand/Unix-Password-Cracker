@@ -26,6 +26,10 @@ func NewChunkAllocator(partition uint64, start uint64, end uint64) *ChunkAllocat
 	return ca
 }
 
+// GetNewGlobalChunk hands out the next slice of the global keyspace, or a
+// previously failed chunk if one was requeued. maxIndex is ignored here on
+// purpose: the controller passes end=0 to mean the full uint64 range, not
+// an empty space.
 func (ca *ChunkAllocator) GetNewGlobalChunk() protocol.Chunk {
 	select {
 	case chunk := <-ca.chunkRequeueCh:
