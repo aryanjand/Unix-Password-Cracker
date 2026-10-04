@@ -27,6 +27,9 @@ go.work.sum
 # env file
 .env
 
+# Graphing virtualenv (created by graphing/generate.sh)
+graphing/.venv/
+
 # SQLite state store
 *.db
 *.db-wal
