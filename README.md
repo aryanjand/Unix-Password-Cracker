@@ -3,11 +3,18 @@
 ![Go](https://img.shields.io/badge/Go-1.25+-00ADD8?logo=go&logoColor=white)
 ![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white)
 ![SQLite](https://img.shields.io/badge/SQLite-State%20Store-003B57?logo=sqlite&logoColor=white)
-![Linux](https://img.shields.io/badge/Runtime-Linux%20%2B%20CGO-FCC624?logo=linux&logoColor=black)
+![Crypto](https://img.shields.io/badge/Crypto-pure%20Go%20default-00ADD8)
 
 Distributed controller/worker system for cracking Unix shadow hashes by partitioning the password space across multiple workers, tracking progress with checkpoints, and persisting worker/task state for failure handling.
 
 This project is best understood as a distributed systems and infrastructure exercise, not just a brute-force tool. The interesting parts are chunk allocation, worker coordination, liveness checks, checkpoint-based recovery, persistence, and performance analysis.
+
+Two separately scoped variants, not one system trying to be both:
+
+- **Track A (this repo today)** — persistent Go controller, TCP workers, SQLite, heartbeats, checkpoints. Run it locally with the Go toolchain (Docker optional).
+- **Track B (planned)** — a public "crack your own throwaway password" dashboard. Fully serverless: AWS Step Functions (`Map`) fans out Lambda workers; Next.js is the UI plus a thin API route. No persistent server, near-zero idle cost.
+
+Track B deliberately drops Track A's real-time per-worker push and early-exit cancellation of in-flight workers. That is a trade-off for a zero-maintenance public demo, not a bug.
 
 > Authorized security research, coursework, and lab use only.
 
@@ -18,6 +25,7 @@ This project is best understood as a distributed systems and infrastructure exer
 - Detects failures with heartbeats and resumes interrupted work from the latest checkpoint.
 - Persists workers, tasks, failures, and checkpoints in a local SQLite file (WAL mode).
 - Captures runtime measurements and turns benchmark logs into CSVs and diagrams.
+- Default crypto path is pure Go (bcrypt, SHA-256/SHA-512 crypt), so `go build` / `go test ./...` work on a plain clone.
 
 ## Architecture
 
@@ -29,7 +37,7 @@ flowchart LR
     A --> W2["Worker 2"]
     A --> WN["Worker N"]
 
-    W1 --> V["Linux crypt_r Verifier"]
+    W1 --> V["Pure-Go Verifier"]
     W2 --> V
     WN --> V
 
@@ -55,7 +63,7 @@ flowchart LR
 - Global chunk allocation on the controller and per-job sub-allocation inside each worker
 - Multi-threaded worker execution over candidate password ranges
 - Shadow-file parsing for a specific Unix user entry
-- Linux `crypt_r` hash verification for real shadow-hash matching
+- Pure-Go hash verification for bcrypt, md5-crypt, sha256-crypt, and sha512-crypt (default build; no CGO)
 - Worker heartbeat monitoring and timeout-triggered chunk requeue
 - Checkpoint reporting and checkpoint-based resume on worker failure
 - SQLite-backed persistence for worker state, task assignment/completion, failures, and checkpoints
@@ -63,8 +71,9 @@ flowchart LR
 
 ## Quick Start
 
-No database or container to stand up first — the controller persists to a local SQLite
-file. Run it directly with the Go toolchain:
+Track A only. Needs a Go 1.25+ toolchain — no MySQL, no CGO, no container. The controller writes a local SQLite file and verifies hashes with the default pure-Go backend.
+
+Track B (hosted demo) has no local run path yet.
 
 ### 1. Move into the Go module
 
@@ -72,17 +81,13 @@ file. Run it directly with the Go toolchain:
 cd distributed-muilti-workers
 ```
 
-Note: the Go module lives under `distributed-muilti-workers/`.
-
-Docker remains a supported alternative if you'd rather not install Go locally:
+Docker is optional if you would rather not install Go locally:
 
 ```bash
 docker compose up --build -d ubuntu
 docker compose exec ubuntu bash
 cd /app/distributed-muilti-workers
 ```
-
-The container already includes `golang`, `tmux`, `git`, and `curl`.
 
 ### 2. Start the controller
 
@@ -94,10 +99,10 @@ go run ./cmd/controller \
   -b 1 \
   -c 1000 \
   -k 100 \
-  --reset
+  -reset
 ```
 
-This creates (or resets) a `cracker.db` SQLite file in the current directory.
+Creates (or, with `-reset`, recreates) `cracker.db` in the current directory.
 
 ### 3. Start workers in separate shells or tmux panes
 
@@ -105,14 +110,16 @@ This creates (or resets) a `cracker.db` SQLite file in the current directory.
 go run ./cmd/worker -c 127.0.0.1 -p 8080 -t 4
 ```
 
-Launch 3-5 workers to see the distributed behavior and compare runtimes.
+Launch 3–5 workers to see chunk allocation, heartbeats, and runtime scaling.
+
+Optional CGO `crypt_r` path (Linux + libcrypt): `go run -tags cgo_crypt ./cmd/controller ...`
 
 ## CLI Reference
 
 ### Controller
 
 ```bash
-go run ./cmd/controller -p PORT -f SHADOW_FILE -u USERNAME -b HEARTBEAT_SECONDS -c PARTITION_SIZE -k CHECKPOINT_INTERVAL [-d SQLITE_DB_PATH] [--reset]
+go run ./cmd/controller -p PORT -f SHADOW_FILE -u USERNAME -b HEARTBEAT_SECONDS -c PARTITION_SIZE -k CHECKPOINT_INTERVAL [-d SQLITE_DB_PATH] [-reset]
 ```
 
 - `-p`: controller port
@@ -121,8 +128,10 @@ go run ./cmd/controller -p PORT -f SHADOW_FILE -u USERNAME -b HEARTBEAT_SECONDS 
 - `-b`: heartbeat interval in seconds
 - `-c` or `-s`: partition size for the password space
 - `-k`: checkpoint interval measured in candidate attempts
-- `-d`: SQLite database file path (default `cracker.db`, override with the `SQLITE_DB_PATH` env var)
-- `--reset`: drops and recreates tracking tables before startup
+- `-d`: SQLite file path (default `cracker.db`, or `SQLITE_DB_PATH`)
+- `-reset`: drop and recreate tracking tables before startup
+
+There is no `/metrics` listen flag yet; that endpoint is still planned.
 
 ### Worker
 
@@ -253,27 +262,64 @@ That gives the controller enough state to requeue failed work from the latest ch
 └── Dockerfile
 ```
 
-## Project Checklist
+## Roadmap
 
-Current persistence is SQLite-based. The unchecked items below are the next infrastructure upgrades.
+PLAN.md is the source of truth. Done items below match the current tree; unchecked items are still planned.
+
+### Shared foundation
+
+- [x] Pure-Go default crypto backend (bcrypt, md5-crypt, sha256-crypt, sha512-crypt)
+- [x] CGO `crypt_r` demoted to opt-in `-tags cgo_crypt` (not the default clone or CI path)
+- [ ] Pure-Go **hash** (generate), not just verify — needed to turn a Track B typed password into a target hash
+
+### Track A — Local controller/worker
+
+No architecture change. Persistent Go controller distributing work over TCP, as documented above.
+
+**Done**
 
 - [x] Distributed controller/worker execution over TCP
 - [x] Shadow parsing and hash-target loading
 - [x] Chunk partitioning and multi-threaded worker search
 - [x] Heartbeat monitoring and worker timeout handling
 - [x] Checkpoint reporting and checkpoint-based chunk resume
-- [x] Persisted worker, task, failure, and checkpoint tracking
+- [x] SQLite persistence (`modernc.org/sqlite`, WAL, single writer) for workers, tasks, failures, and checkpoints
 - [x] Benchmark summaries, CSV exports, and plotted diagrams
-- [ ] `/metrics` endpoint exposing `jobs_queued`, `jobs_running`, `jobs_completed`, per-worker rate, aggregate hashes/sec, and active workers
-- [ ] Controller crash recovery from persisted job/chunk state
-- [ ] Add unit tests for controller, worker, chunk allocation, and recovery logic
+
+**Planned**
+
+- [ ] Fix `NewWorkerManger` → `NewWorkerManager`
+- [ ] Rename `distributed-muilti-workers/` → `distributed-multi-workers/`
+- [ ] Comment that `maxIndex=0` on the global allocator is intentional (full `uint64` keyspace)
+- [ ] Unit tests for chunk allocation, cracker engine, protocol messages, and shadow parsing
+- [ ] CI: bump Go to `1.25.6` to match `go.mod`; run the default pure-Go build/tests only
+- [ ] `/metrics` HTTP endpoint: `jobs_queued`, `jobs_running`, `jobs_completed`, per-worker rate, aggregate hashes/sec, active workers
+- [ ] Controller crash recovery: reload in-progress tasks/workers from SQLite on startup unless `--reset`
+
+### Track B — Hosted serverless demo
+
+Public "crack your own throwaway password" dashboard. Next.js calls `StartSyncExecution` on a Step Functions Express Workflow; Lambdas use the shared pure-Go backend (`GOOS=linux GOARCH=arm64` zip deploy, no Docker/ECR).
+
+**Trade-offs vs Track A (by design)**
+
+- No real-time per-worker push. The UI plays an optimistic "N workers racing" animation, then reveals real per-chunk results when the synchronous execution returns.
+- No early-exit cancellation. A Step Functions `Map` state cannot cancel sibling iterations, so every chunk runs to completion even after one finds the password. Track A broadcasts `stop` on a find. Acceptable here because the demo keyspace is capped.
+
+**Planned**
+
+- [ ] `prepare-worker` and `crack-worker` Lambda handlers, tested as plain Go functions first
+- [ ] Shared demo cap policy (length/charset limits + estimated-time math)
+- [ ] Step Functions Express Workflow: Prepare → CrackFanOut (`Map`, capped concurrency) → Aggregate
+- [ ] Next.js playground (`frontend/`): throwaway-password disclaimer, server-side caps, per-IP rate limit, global concurrency ceiling; plaintext never logged or persisted
+- [ ] Terraform (`infra/terraform/`): IAM, zip Lambdas, Express state machine; `apply` is a manual, reviewed step
 
 ## Caveats
 
-- Real hash verification requires Linux with CGO enabled because the cracker uses `crypt_r`.
-- On non-Linux or non-CGO builds, verification falls back to a stub that returns an error.
-- The current metrics implementation prints summaries to stdout; it does not expose an HTTP metrics surface.
-- The repo has build verification via `go test ./...`, but there are currently no `_test.go` files.
+- Default `go build` / `go test ./...` use the pure-Go verifier. No Linux, CGO, or `libcrypt` required.
+- libc `crypt_r` is still available behind `-tags cgo_crypt` (Linux + CGO + libcrypt).
+- Metrics print to stdout at the end of a run; there is no HTTP `/metrics` surface yet.
+- Some unit tests exist; chunk, engine, protocol, and shadow tests are still planned.
+- Track B (hosted demo) is not in the tree yet.
 
 ## Validation
 
@@ -284,7 +330,7 @@ cd distributed-muilti-workers
 go test ./...
 ```
 
-This currently passes as a build-level verification step.
+Default (pure-Go) tests run here. The CGO path is a manual local check (`-tags cgo_crypt`), not the default CI job.
 
 ## Responsible Use
 

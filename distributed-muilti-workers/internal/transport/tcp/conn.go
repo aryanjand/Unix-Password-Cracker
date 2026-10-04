@@ -3,17 +3,27 @@ package tcp
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"net"
+	"sync"
 
 	"github.com/aryanjand/Unix-Password-Cracker/internal/protocol"
 )
+
+// ErrConnClosed is returned by SendMsg once the connection has stopped
+// accepting outbound messages (Close has been called, or the connection
+// died).
+var ErrConnClosed = errors.New("connection closed")
 
 type Conn struct {
 	Conn   net.Conn
 	Stop   context.Context
 	Cancel context.CancelFunc
-	Send   chan protocol.Message
 	Recv   chan protocol.Message
+
+	writeMu   sync.Mutex
+	closed    bool
+	closeOnce sync.Once
 }
 
 func NewConn(conn net.Conn) *Conn {
@@ -23,14 +33,27 @@ func NewConn(conn net.Conn) *Conn {
 		Conn:   conn,
 		Stop:   stopCtx,
 		Cancel: cancel,
-		Send:   make(chan protocol.Message, 32),
 		Recv:   make(chan protocol.Message, 32),
 	}
 
 	go cc.ReadLoop()
-	go cc.WriteLoop()
-
 	return cc
+}
+
+func (c *Conn) SendMsg(msg protocol.Message) error {
+	c.writeMu.Lock()
+	defer c.writeMu.Unlock()
+
+	if c.closed {
+		return ErrConnClosed
+	}
+
+	if err := json.NewEncoder(c.Conn).Encode(msg); err != nil {
+		c.closed = true
+		c.teardown()
+		return err
+	}
+	return nil
 }
 
 func (c *Conn) ReadLoop() {
@@ -51,23 +74,17 @@ func (c *Conn) ReadLoop() {
 	}
 }
 
-func (c *Conn) WriteLoop() error {
-	encoder := json.NewEncoder(c.Conn)
+func (c *Conn) Close() {
+	c.writeMu.Lock()
+	defer c.writeMu.Unlock()
 
-	for {
-		select {
-		case <-c.Stop.Done():
-			return nil
-		case msg := <-c.Send:
-			if err := encoder.Encode(msg); err != nil {
-				c.Close()
-				return err
-			}
-		}
-	}
+	c.closed = true
+	c.teardown()
 }
 
-func (c *Conn) Close() {
-	c.Cancel()
-	_ = c.Conn.Close()
+func (c *Conn) teardown() {
+	c.closeOnce.Do(func() {
+		c.Cancel()
+		_ = c.Conn.Close()
+	})
 }

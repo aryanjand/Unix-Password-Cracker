@@ -121,6 +121,8 @@ func main() {
 	metrics.ObserveEndToEndRuntime(controllerStartedAt, time.Now())
 	metrics.PrintSummary()
 
-	time.Sleep(5 * time.Second)
-
+	const shutdownTimeout = 10 * time.Second
+	if !manager.WaitForShutdown(shutdownTimeout) {
+		log.Printf("timed out after %s waiting for all workers to acknowledge stop", shutdownTimeout)
+	}
 }

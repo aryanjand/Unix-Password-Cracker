@@ -81,13 +81,15 @@ func (w *Worker) HandleWorker() {
 				chunk := w.alloc.GetNewGlobalChunk()
 				w.activeChunk = &chunk
 				w.pendingDispatchStartedAt = dispatchStartedAt
-				w.conn.Send <- protocol.Message{
+				if err := w.conn.SendMsg(protocol.Message{
 					Command: protocol.MsgJobRes,
 					JobResponse: &protocol.JobResponse{
 						Chunk:       chunk,
 						Checkpoint:  w.checkpoint,
 						ShadowEntry: w.shadow,
 					},
+				}); err != nil {
+					w.logger.Printf("send job response failed: %v", err)
 				}
 				w.persistTaskAssignment(chunk)
 				w.persistWorkerState(persistence.WorkerStateRunning, "")
@@ -142,8 +144,8 @@ func (w *Worker) HandleWorker() {
 			case protocol.MsgFound:
 				resultReceivedAt := time.Now()
 				result := msg.Result
-				w.logger.Printf("<- received cracking result")
 				if result != nil {
+					w.logger.Printf("<- worker %s found password %q", w.id, result.Password)
 					if w.metrics != nil {
 						w.observeWorkerJobMetrics(result.WorkerJobMetrics)
 						w.metrics.ObserveResultReturnLatency(result.WorkerSentAt, resultReceivedAt)
@@ -201,11 +203,13 @@ func (w *Worker) HandleWorker() {
 				return
 			}
 			missedHeartbeats++
-			w.conn.Send <- protocol.Message{
+			if err := w.conn.SendMsg(protocol.Message{
 				Command: protocol.MsgHeartbeatReq,
 				HeartbeatRequest: &protocol.HeartbeatRequest{
 					Interval: w.interval,
 				},
+			}); err != nil {
+				w.logger.Printf("send heartbeat request failed: %v", err)
 			}
 
 		case <-w.conn.Stop.Done():

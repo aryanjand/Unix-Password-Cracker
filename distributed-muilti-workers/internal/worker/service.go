@@ -77,33 +77,43 @@ func (w *Worker) HandleWorker() {
 					CurrentChunk:  fmt.Sprintf("%d-%d", chunk.Start, chunk.End),
 				}
 
-				w.Conn.Send <- protocol.Message{
+				if err := w.Conn.SendMsg(protocol.Message{
 					Command:           protocol.MsgHeartbeatRes,
 					HeartbeatResponse: &hb,
+				}); err != nil {
+					w.Logger.Printf("send heartbeat response failed: %v", err)
 				}
 
 			case protocol.MsgStop:
 				stopAt := time.Now()
-				w.Conn.Send <- protocol.Message{
+				if err := w.Conn.SendMsg(protocol.Message{
 					Command: protocol.MsgStopAck,
 					StopAck: &protocol.StopAck{
 						WorkerJobMetrics: w.takeMetricsForStop(stopAt),
 						WorkerSentAt:     stopAt,
 					},
+				}); err != nil {
+					w.Logger.Printf("send stop ack failed: %v", err)
 				}
 				w.Conn.Close()
-				w.StopCh <- "stop"
+				w.signalStop()
 				return
 			}
 
 		case <-w.Conn.Stop.Done():
+			w.signalStop()
 			return
 		}
 	}
 }
 
-func (w *Worker) Wait() {
-	w.Wg.Wait()
+// signalStop notifies StopCh that the worker should exit, without blocking
+// if a stop was already signaled (StopCh is buffered to exactly 1).
+func (w *Worker) signalStop() {
+	select {
+	case w.StopCh <- "stop":
+	default:
+	}
 }
 
 func (w *Worker) RecordTested(tested uint64) {
@@ -133,13 +143,15 @@ func (w *Worker) monitorCheckpoint(chunk protocol.Chunk, checkpoint uint64) {
 		case <-ticker.C:
 			completed := atomic.LoadUint64(&w.TotalTested) - startTotal
 			for completed >= next {
-				w.Conn.Send <- protocol.Message{
+				if err := w.Conn.SendMsg(protocol.Message{
 					Command: protocol.MsgCheckpointReport,
 					CheckpointReport: &protocol.CheckpointReport{
 						Chunk:      chunk,
 						Completed:  next,
 						ReportedAt: time.Now(),
 					},
+				}); err != nil {
+					w.Logger.Printf("send checkpoint report failed: %v", err)
 				}
 				next += checkpoint
 			}
