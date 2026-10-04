@@ -1,0 +1,141 @@
+password_label,hash_algorithm,number_of_workers,metric,count,total_ms,avg_ms,min_ms,max_ms,per_unit_ns,units,run_label
+Ace,bcrypt,1,checkpoint overhead observations,85,493.275996,5.803247,4.97496,17.706318,,,Ace - 1 workers
+Ace,bcrypt,1,controller-side parsing time,1,0.032729,0.032729,0.032729,0.032729,,,Ace - 1 workers
+Ace,bcrypt,1,job dispatch/registration overhead,9,133.293429,14.810381,11.07984,17.954473,,,Ace - 1 workers
+Ace,bcrypt,1,result return latency (worker -> controller),1,0.317582,0.317582,0.317582,0.317582,,,Ace - 1 workers
+Ace,bcrypt,1,total end-to-end runtime,1,15984.453238,15984.453238,15984.453238,15984.453238,,,Ace - 1 workers
+Ace,bcrypt,1,work assignment overhead,9,48.242597,5.360288,0.546999,8.47388,5360.29,9000.0,Ace - 1 workers
+Ace,bcrypt,1,worker cracking time (compute/search),9,11398.773783999999,1266.53042,736.415411,1382.3116790000001,,,Ace - 1 workers
+Ace,bcrypt,2,checkpoint overhead observations,82,499.801391,6.095138,5.044744,18.005221,,,Ace - 2 workers
+Ace,bcrypt,2,controller-side parsing time,1,0.5479729999999999,0.5479729999999999,0.5479729999999999,0.5479729999999999,,,Ace - 2 workers
+Ace,bcrypt,2,job dispatch/registration overhead,9,145.981998,16.220222,9.854092,30.45606,,,Ace - 2 workers
+Ace,bcrypt,2,result return latency (worker -> controller),1,0.333367,0.333367,0.333367,0.333367,,,Ace - 2 workers
+Ace,bcrypt,2,total end-to-end runtime,1,6340.247632,6340.247632,6340.247632,6340.247632,,,Ace - 2 workers
+Ace,bcrypt,2,work assignment overhead,8,35.323028,4.415378,0.5421670000000001,5.970135,4415.38,8000.0,Ace - 2 workers
+Ace,bcrypt,2,worker cracking time (compute/search),8,9869.248023,1233.656002,759.347767,1319.021158,,,Ace - 2 workers
+Ace,bcrypt,3,checkpoint overhead observations,84,529.268695,6.300817,4.954392,18.488848,,,Ace - 3 workers
+Ace,bcrypt,3,controller-side parsing time,1,0.985459,0.985459,0.985459,0.985459,,,Ace - 3 workers
+Ace,bcrypt,3,job dispatch/registration overhead,10,150.511133,15.051113,9.952493,20.37155,,,Ace - 3 workers
+Ace,bcrypt,3,result return latency (worker -> controller),1,0.285569,0.285569,0.285569,0.285569,,,Ace - 3 workers
+Ace,bcrypt,3,total end-to-end runtime,1,13645.110187,13645.110187,13645.110187,13645.110187,,,Ace - 3 workers
+Ace,bcrypt,3,work assignment overhead,8,33.677799,4.209724,0.597678,7.777268,4209.72,8000.0,Ace - 3 workers
+Ace,bcrypt,3,worker cracking time (compute/search),8,9911.205317,1238.900664,734.107991,1335.1322160000002,,,Ace - 3 workers
+Ace,bcrypt,5,checkpoint overhead observations,89,537.670143,6.041237,5.05604,16.212445,,,Ace - 5 workers
+Ace,bcrypt,5,controller-side parsing time,1,2.32254,2.32254,2.32254,2.32254,,,Ace - 5 workers
+Ace,bcrypt,5,job dispatch/registration overhead,12,165.739977,13.811664,9.608395,18.171353,,,Ace - 5 workers
+Ace,bcrypt,5,result return latency (worker -> controller),1,0.34519299999999997,0.34519299999999997,0.34519299999999997,0.34519299999999997,,,Ace - 5 workers
+Ace,bcrypt,5,total end-to-end runtime,1,5237.835341,5237.835341,5237.835341,5237.835341,,,Ace - 5 workers
+Ace,bcrypt,5,work assignment overhead,8,26.87676,3.359595,0.318662,8.417674,3359.59,8000.0,Ace - 5 workers
+Ace,bcrypt,5,worker cracking time (compute/search),8,10118.066571,1264.758321,749.790687,1363.170409,,,Ace - 5 workers
+Bad,bcrypt,1,checkpoint overhead observations,146,861.781524,5.902613,2.841464,22.586794,,,Bad - 1 workers
+Bad,bcrypt,1,controller-side parsing time,1,0.598565,0.598565,0.598565,0.598565,,,Bad - 1 workers
+Bad,bcrypt,1,job dispatch/registration overhead,15,214.532446,14.302163,9.293679,21.637092,,,Bad - 1 workers
+Bad,bcrypt,1,result return latency (worker -> controller),1,0.360437,0.360437,0.360437,0.360437,,,Bad - 1 workers
+Bad,bcrypt,1,total end-to-end runtime,1,22122.574053,22122.574053,22122.574053,22122.574053,,,Bad - 1 workers
+Bad,bcrypt,1,work assignment overhead,15,81.795756,5.45305,0.685078,9.988845,5453.05,15000.0,Bad - 1 workers
+Bad,bcrypt,1,worker cracking time (compute/search),15,19347.603472,1289.840231,837.69743,1368.393691,,,Bad - 1 workers
+Bad,bcrypt,2,checkpoint overhead observations,151,942.955194,6.244736,5.009305,24.770662,,,Bad - 2 workers
+Bad,bcrypt,2,controller-side parsing time,1,0.5119049999999999,0.5119049999999999,0.5119049999999999,0.5119049999999999,,,Bad - 2 workers
+Bad,bcrypt,2,job dispatch/registration overhead,16,246.146835,15.384177,10.790674,23.517101,,,Bad - 2 workers
+Bad,bcrypt,2,result return latency (worker -> controller),1,0.430681,0.430681,0.430681,0.430681,,,Bad - 2 workers
+Bad,bcrypt,2,total end-to-end runtime,1,13742.855529,13742.855529,13742.855529,13742.855529,,,Bad - 2 workers
+Bad,bcrypt,2,work assignment overhead,15,78.68278,5.245518,0.433269,8.005987,5245.52,15000.0,Bad - 2 workers
+Bad,bcrypt,2,worker cracking time (compute/search),15,19509.856707000003,1300.657113,887.614591,1383.137393,,,Bad - 2 workers
+Bad,bcrypt,3,checkpoint overhead observations,141,886.76814,6.289135,4.947735,20.443034,,,Bad - 3 workers
+Bad,bcrypt,3,controller-side parsing time,1,2.967175,2.967175,2.967175,2.967175,,,Bad - 3 workers
+Bad,bcrypt,3,job dispatch/registration overhead,15,230.529303,15.36862,10.794735,24.210989,,,Bad - 3 workers
+Bad,bcrypt,3,result return latency (worker -> controller),1,0.364935,0.364935,0.364935,0.364935,,,Bad - 3 workers
+Bad,bcrypt,3,total end-to-end runtime,1,18113.060535,18113.060535,18113.060535,18113.060535,,,Bad - 3 workers
+Bad,bcrypt,3,work assignment overhead,13,68.352382,5.257875,0.6032329999999999,13.970061,5257.88,13000.0,Bad - 3 workers
+Bad,bcrypt,3,worker cracking time (compute/search),13,16658.127372,1281.394413,885.923726,1383.4295940000002,,,Bad - 3 workers
+Bad,bcrypt,5,checkpoint overhead observations,145,946.18744,6.52543,4.884339,26.465023,,,Bad - 5 workers
+Bad,bcrypt,5,controller-side parsing time,1,0.6016090000000001,0.6016090000000001,0.6016090000000001,0.6016090000000001,,,Bad - 5 workers
+Bad,bcrypt,5,job dispatch/registration overhead,17,264.206143,15.541537,10.25756,21.078567,,,Bad - 5 workers
+Bad,bcrypt,5,result return latency (worker -> controller),1,0.322377,0.322377,0.322377,0.322377,,,Bad - 5 workers
+Bad,bcrypt,5,total end-to-end runtime,1,5927.112001,5927.112001,5927.112001,5927.112001,,,Bad - 5 workers
+Bad,bcrypt,5,work assignment overhead,13,54.897584,4.222891,0.30933,8.903458,4222.89,13000.0,Bad - 5 workers
+Bad,bcrypt,5,worker cracking time (compute/search),13,16639.945306,1279.995792,845.580834,1362.131229,,,Bad - 5 workers
+Cab,bcrypt,1,checkpoint overhead observations,208,1285.117262,6.178448,4.836577,66.857124,,,Cab - 1 workers
+Cab,bcrypt,1,controller-side parsing time,1,0.6163609999999999,0.6163609999999999,0.6163609999999999,0.6163609999999999,,,Cab - 1 workers
+Cab,bcrypt,1,job dispatch/registration overhead,21,366.700523,17.461929,13.405513,60.881557,,,Cab - 1 workers
+Cab,bcrypt,1,result return latency (worker -> controller),1,0.343472,0.343472,0.343472,0.343472,,,Cab - 1 workers
+Cab,bcrypt,1,total end-to-end runtime,1,29739.544795,29739.544795,29739.544795,29739.544795,,,Cab - 1 workers
+Cab,bcrypt,1,work assignment overhead,21,160.549854,7.645231,0.44733300000000004,54.889822,7645.23,21000.0,Cab - 1 workers
+Cab,bcrypt,1,worker cracking time (compute/search),21,27368.996964,1303.2855690000001,1166.429589,1360.5295070000002,,,Cab - 1 workers
+Cab,bcrypt,2,checkpoint overhead observations,215,1341.818618,6.241016,4.845168,34.203622,,,Cab - 2 workers
+Cab,bcrypt,2,controller-side parsing time,1,2.393922,2.393922,2.393922,2.393922,,,Cab - 2 workers
+Cab,bcrypt,2,job dispatch/registration overhead,22,345.615585,15.709799,10.684107,33.613582,,,Cab - 2 workers
+Cab,bcrypt,2,result return latency (worker -> controller),1,0.306741,0.306741,0.306741,0.306741,,,Cab - 2 workers
+Cab,bcrypt,2,total end-to-end runtime,1,16064.055634999999,16064.055634999999,16064.055634999999,16064.055634999999,,,Cab - 2 workers
+Cab,bcrypt,2,work assignment overhead,21,111.23026,5.296679,0.448187,8.907313,5296.68,21000.0,Cab - 2 workers
+Cab,bcrypt,2,worker cracking time (compute/search),21,27292.197581,1299.628456,1137.404649,1345.951933,,,Cab - 2 workers
+Cab,bcrypt,3,checkpoint overhead observations,213,1330.036987,6.244305,4.971795,19.419495,,,Cab - 3 workers
+Cab,bcrypt,3,controller-side parsing time,1,0.5727599999999999,0.5727599999999999,0.5727599999999999,0.5727599999999999,,,Cab - 3 workers
+Cab,bcrypt,3,job dispatch/registration overhead,23,340.985932,14.825475,10.0644,17.646453,,,Cab - 3 workers
+Cab,bcrypt,3,result return latency (worker -> controller),1,0.407608,0.407608,0.407608,0.407608,,,Cab - 3 workers
+Cab,bcrypt,3,total end-to-end runtime,1,12037.563992000001,12037.563992000001,12037.563992000001,12037.563992000001,,,Cab - 3 workers
+Cab,bcrypt,3,work assignment overhead,21,102.048954,4.859474,0.399258,6.271847,4859.47,21000.0,Cab - 3 workers
+Cab,bcrypt,3,worker cracking time (compute/search),21,27402.232377,1304.868208,1147.0819960000001,1369.105088,,,Cab - 3 workers
+Cab,bcrypt,5,checkpoint overhead observations,221,1403.875277,6.352376,4.926331,22.233524,,,Cab - 5 workers
+Cab,bcrypt,5,controller-side parsing time,1,0.064228,0.064228,0.064228,0.064228,,,Cab - 5 workers
+Cab,bcrypt,5,job dispatch/registration overhead,25,387.961768,15.51847,9.918475,22.889037,,,Cab - 5 workers
+Cab,bcrypt,5,result return latency (worker -> controller),1,0.34645600000000004,0.34645600000000004,0.34645600000000004,0.34645600000000004,,,Cab - 5 workers
+Cab,bcrypt,5,total end-to-end runtime,1,8718.654395,8718.654395,8718.654395,8718.654395,,,Cab - 5 workers
+Cab,bcrypt,5,work assignment overhead,21,101.730757,4.844321,0.421843,9.841224,4844.32,21000.0,Cab - 5 workers
+Cab,bcrypt,5,worker cracking time (compute/search),21,27867.305174999998,1327.014532,1187.360396,1413.773757,,,Cab - 5 workers
+Dad,bcrypt,1,checkpoint overhead observations,271,1735.327857,6.403423,5.030963,26.688831,,,Dad - 1 workers
+Dad,bcrypt,1,controller-side parsing time,1,0.554102,0.554102,0.554102,0.554102,,,Dad - 1 workers
+Dad,bcrypt,1,job dispatch/registration overhead,28,429.466219,15.338079,11.672591,18.669758,,,Dad - 1 workers
+Dad,bcrypt,1,result return latency (worker -> controller),1,0.33495199999999997,0.33495199999999997,0.33495199999999997,0.33495199999999997,,,Dad - 1 workers
+Dad,bcrypt,1,total end-to-end runtime,1,37356.32461,37356.32461,37356.32461,37356.32461,,,Dad - 1 workers
+Dad,bcrypt,1,work assignment overhead,28,153.887353,5.495976,0.49523500000000004,8.216611,5495.98,28000.0,Dad - 1 workers
+Dad,bcrypt,1,worker cracking time (compute/search),28,35269.68801799999,1259.6317139999999,163.334022,1395.953669,,,Dad - 1 workers
+Dad,bcrypt,2,checkpoint overhead observations,270,1664.555894,6.165021,4.936946,23.81527,,,Dad - 2 workers
+Dad,bcrypt,2,controller-side parsing time,1,2.393118,2.393118,2.393118,2.393118,,,Dad - 2 workers
+Dad,bcrypt,2,job dispatch/registration overhead,28,416.115963,14.861284,10.678874,18.091372,,,Dad - 2 workers
+Dad,bcrypt,2,result return latency (worker -> controller),1,0.40611200000000003,0.40611200000000003,0.40611200000000003,0.40611200000000003,,,Dad - 2 workers
+Dad,bcrypt,2,total end-to-end runtime,1,18767.757168,18767.757168,18767.757168,18767.757168,,,Dad - 2 workers
+Dad,bcrypt,2,work assignment overhead,27,142.548273,5.279565,0.30493200000000004,7.130386,5279.57,27000.0,Dad - 2 workers
+Dad,bcrypt,2,worker cracking time (compute/search),27,34309.117094999994,1270.70804,165.172894,1348.590236,,,Dad - 2 workers
+Dad,bcrypt,3,checkpoint overhead observations,271,1722.302159,6.355358,5.028086,20.354057,,,Dad - 3 workers
+Dad,bcrypt,3,controller-side parsing time,1,0.631081,0.631081,0.631081,0.631081,,,Dad - 3 workers
+Dad,bcrypt,3,job dispatch/registration overhead,30,451.9247,15.064156,10.669615,20.209473,,,Dad - 3 workers
+Dad,bcrypt,3,result return latency (worker -> controller),1,0.310807,0.310807,0.310807,0.310807,,,Dad - 3 workers
+Dad,bcrypt,3,total end-to-end runtime,1,14061.031919,14061.031919,14061.031919,14061.031919,,,Dad - 3 workers
+Dad,bcrypt,3,work assignment overhead,28,148.675429,5.309836,0.45370699999999997,7.734798,5309.84,28000.0,Dad - 3 workers
+Dad,bcrypt,3,worker cracking time (compute/search),28,35878.326965,1281.36882,168.0746,1404.559625,,,Dad - 3 workers
+Dad,bcrypt,5,checkpoint overhead observations,249,1532.286255,6.15376,4.973883,21.594235,,,Dad - 5 workers
+Dad,bcrypt,5,controller-side parsing time,1,0.042936,0.042936,0.042936,0.042936,,,Dad - 5 workers
+Dad,bcrypt,5,job dispatch/registration overhead,28,444.798015,15.885643,10.308168,21.945728,,,Dad - 5 workers
+Dad,bcrypt,5,result return latency (worker -> controller),1,0.42357100000000003,0.42357100000000003,0.42357100000000003,0.42357100000000003,,,Dad - 5 workers
+Dad,bcrypt,5,total end-to-end runtime,1,9418.923719,9418.923719,9418.923719,9418.923719,,,Dad - 5 workers
+Dad,bcrypt,5,work assignment overhead,24,122.823556,5.117648,0.35806400000000005,11.857446,5117.65,24000.0,Dad - 5 workers
+Dad,bcrypt,5,worker cracking time (compute/search),24,30282.363064999998,1261.7651270000001,161.532269,1332.14042,,,Dad - 5 workers
+Ear,bcrypt,1,checkpoint overhead observations,333,2039.62499,6.124999,4.861944,26.345092,,,Ear - 1 workers
+Ear,bcrypt,1,controller-side parsing time,1,0.495019,0.495019,0.495019,0.495019,,,Ear - 1 workers
+Ear,bcrypt,1,job dispatch/registration overhead,34,549.788668,16.170254,14.294737,25.770127,,,Ear - 1 workers
+Ear,bcrypt,1,result return latency (worker -> controller),1,0.36148,0.36148,0.36148,0.36148,,,Ear - 1 workers
+Ear,bcrypt,1,total end-to-end runtime,1,43990.097333,43990.097333,43990.097333,43990.097333,,,Ear - 1 workers
+Ear,bcrypt,1,work assignment overhead,34,187.402131,5.511827,0.34108499999999997,7.562308,5511.83,34000.0,Ear - 1 workers
+Ear,bcrypt,1,worker cracking time (compute/search),34,43353.517731,1275.1034619999998,496.926035,1340.598088,,,Ear - 1 workers
+Ear,bcrypt,2,checkpoint overhead observations,332,2169.429306,6.534425,4.939216,46.779899,,,Ear - 2 workers
+Ear,bcrypt,2,controller-side parsing time,1,0.558155,0.558155,0.558155,0.558155,,,Ear - 2 workers
+Ear,bcrypt,2,job dispatch/registration overhead,34,555.42052,16.335897,9.98262,59.721239,,,Ear - 2 workers
+Ear,bcrypt,2,result return latency (worker -> controller),1,0.321904,0.321904,0.321904,0.321904,,,Ear - 2 workers
+Ear,bcrypt,2,total end-to-end runtime,1,23699.949608,23699.949608,23699.949608,23699.949608,,,Ear - 2 workers
+Ear,bcrypt,2,work assignment overhead,33,206.150565,6.246986,0.698915,33.492776,6246.99,33000.0,Ear - 2 workers
+Ear,bcrypt,2,worker cracking time (compute/search),33,42772.20796,1296.1275130000001,496.359518,1454.176549,,,Ear - 2 workers
+Ear,bcrypt,3,checkpoint overhead observations,334,1973.302173,5.90809,4.964412,20.301883,,,Ear - 3 workers
+Ear,bcrypt,3,controller-side parsing time,1,0.57537,0.57537,0.57537,0.57537,,,Ear - 3 workers
+Ear,bcrypt,3,job dispatch/registration overhead,36,537.190711,14.921964,9.93148,20.908478,,,Ear - 3 workers
+Ear,bcrypt,3,result return latency (worker -> controller),1,0.530841,0.530841,0.530841,0.530841,,,Ear - 3 workers
+Ear,bcrypt,3,total end-to-end runtime,1,16392.842194,16392.842194,16392.842194,16392.842194,,,Ear - 3 workers
+Ear,bcrypt,3,work assignment overhead,34,181.358218,5.334065,0.32483300000000004,11.026071,5334.07,34000.0,Ear - 3 workers
+Ear,bcrypt,3,worker cracking time (compute/search),34,44008.027102,1294.353738,500.587501,1382.185416,,,Ear - 3 workers
+Ear,bcrypt,5,checkpoint overhead observations,332,2047.9136690000003,6.168414,4.808256,30.891653,,,Ear - 5 workers
+Ear,bcrypt,5,controller-side parsing time,1,0.668676,0.668676,0.668676,0.668676,,,Ear - 5 workers
+Ear,bcrypt,5,job dispatch/registration overhead,36,564.804312,15.689008,10.180728,23.91123,,,Ear - 5 workers
+Ear,bcrypt,5,result return latency (worker -> controller),1,0.364479,0.364479,0.364479,0.364479,,,Ear - 5 workers
+Ear,bcrypt,5,total end-to-end runtime,1,13253.00485,13253.00485,13253.00485,13253.00485,,,Ear - 5 workers
+Ear,bcrypt,5,work assignment overhead,33,176.506411,5.348679,0.352545,12.384866,5348.68,33000.0,Ear - 5 workers
+Ear,bcrypt,5,worker cracking time (compute/search),33,42984.723304,1302.567372,495.284614,1381.7388429999999,,,Ear - 5 workers
