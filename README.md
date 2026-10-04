@@ -78,7 +78,7 @@ Track B (hosted demo) has no local run path yet.
 ### 1. Move into the Go module
 
 ```bash
-cd distributed-muilti-workers
+cd distributed-multi-workers
 ```
 
 Docker is optional if you would rather not install Go locally:
@@ -86,7 +86,7 @@ Docker is optional if you would rather not install Go locally:
 ```bash
 docker compose up --build -d ubuntu
 docker compose exec ubuntu bash
-cd /app/distributed-muilti-workers
+cd /app/distributed-multi-workers
 ```
 
 ### 2. Start the controller
@@ -245,7 +245,7 @@ That gives the controller enough state to requeue failed work from the latest ch
 
 ```text
 .
-├── distributed-muilti-workers/
+├── distributed-multi-workers/
 │   ├── cmd/controller
 │   ├── cmd/worker
 │   ├── internal/controller
@@ -285,14 +285,14 @@ No architecture change. Persistent Go controller distributing work over TCP, as 
 - [x] Checkpoint reporting and checkpoint-based chunk resume
 - [x] SQLite persistence (`modernc.org/sqlite`, WAL, single writer) for workers, tasks, failures, and checkpoints
 - [x] Benchmark summaries, CSV exports, and plotted diagrams
+- [x] Fix `NewWorkerManger` → `NewWorkerManager`
+- [x] Rename `distributed-muilti-workers/` → `distributed-multi-workers/`
+- [x] Comment that `maxIndex=0` on the global allocator is intentional (full `uint64` keyspace)
+- [x] Unit tests for chunk allocation, cracker engine, protocol messages, and shadow parsing
+- [x] CI: bump Go to `1.25.6` to match `go.mod`; run the default pure-Go build/tests only
 
 **Planned**
 
-- [ ] Fix `NewWorkerManger` → `NewWorkerManager`
-- [ ] Rename `distributed-muilti-workers/` → `distributed-multi-workers/`
-- [ ] Comment that `maxIndex=0` on the global allocator is intentional (full `uint64` keyspace)
-- [ ] Unit tests for chunk allocation, cracker engine, protocol messages, and shadow parsing
-- [ ] CI: bump Go to `1.25.6` to match `go.mod`; run the default pure-Go build/tests only
 - [ ] `/metrics` HTTP endpoint: `jobs_queued`, `jobs_running`, `jobs_completed`, per-worker rate, aggregate hashes/sec, active workers
 - [ ] Controller crash recovery: reload in-progress tasks/workers from SQLite on startup unless `--reset`
 
@@ -318,7 +318,7 @@ Public "crack your own throwaway password" dashboard. Next.js calls `StartSyncEx
 - Default `go build` / `go test ./...` use the pure-Go verifier. No Linux, CGO, or `libcrypt` required.
 - libc `crypt_r` is still available behind `-tags cgo_crypt` (Linux + CGO + libcrypt).
 - Metrics print to stdout at the end of a run; there is no HTTP `/metrics` surface yet.
-- Some unit tests exist; chunk, engine, protocol, and shadow tests are still planned.
+- Chunk, engine, protocol, and shadow unit tests run under the default `go test ./...`.
 - Track B (hosted demo) is not in the tree yet.
 
 ## Validation
@@ -326,7 +326,7 @@ Public "crack your own throwaway password" dashboard. Next.js calls `StartSyncEx
 From the Go module directory:
 
 ```bash
-cd distributed-muilti-workers
+cd distributed-multi-workers
 go test ./...
 ```
 
