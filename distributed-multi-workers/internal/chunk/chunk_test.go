@@ -1,6 +1,7 @@
 package chunk
 
 import (
+	"sync"
 	"testing"
 
 	"github.com/aryanjand/Unix-Password-Cracker/internal/protocol"
@@ -52,6 +53,50 @@ func TestGlobalRequeuePreferredOverNewChunk(t *testing.T) {
 	want := protocol.Chunk{Id: 1, Start: 0, End: 100}
 	if next != want {
 		t.Fatalf("after requeue drain, got %+v, want %+v", next, want)
+	}
+}
+
+func TestGetNewWorkItemConcurrentCoverage(t *testing.T) {
+	const (
+		start   = uint64(10)
+		end     = uint64(110)
+		workers = 8
+	)
+
+	alloc := NewChunkAllocator(1, start, end)
+
+	var mu sync.Mutex
+	seen := make(map[uint64]int)
+	var wg sync.WaitGroup
+
+	for i := 0; i < workers; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for {
+				ch, ok := alloc.GetNewWorkItem()
+				if !ok {
+					return
+				}
+				if ch.End != ch.Start+1 {
+					t.Errorf("work item %+v: want size 1", ch)
+					return
+				}
+				mu.Lock()
+				seen[ch.Start]++
+				mu.Unlock()
+			}
+		}()
+	}
+	wg.Wait()
+
+	if uint64(len(seen)) != end-start {
+		t.Fatalf("covered %d indexes, want %d", len(seen), end-start)
+	}
+	for i := start; i < end; i++ {
+		if seen[i] != 1 {
+			t.Fatalf("index %d appeared %d times, want 1", i, seen[i])
+		}
 	}
 }
 
