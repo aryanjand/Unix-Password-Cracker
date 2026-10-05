@@ -58,13 +58,13 @@ Bcrypt fixture suite from `make graphs` on this tree. Adding workers cuts wall-c
 
 | Password | 1 worker | 5 workers | Speedup |
 | --- | ---: | ---: | ---: |
-| Ace | 2.59s | 1.02s | 2.55x |
-| Bad | 4.97s | 1.72s | 2.89x |
-| Cab | 7.47s | 2.57s | 2.91x |
-| Dad | 9.95s | 3.31s | 3.01x |
-| Ear | 12.43s | 4.08s | 3.05x |
+| Ace | 2.72s | 0.93s | 2.91x |
+| Bad | 4.95s | 1.66s | 2.99x |
+| Cab | 7.40s | 2.56s | 2.90x |
+| Dad | 9.86s | 3.26s | 3.02x |
+| Ear | 12.33s | 4.15s | 2.97x |
 
-Speedup ranges from **2.55x to 3.05x** (average **~2.88x**). An Amdahl prediction from the 1–3 worker serial fraction is optimistic here (**+51% to +80%**). Checkpoint time at 5 workers is **4.86%–7.16%** of wall clock. Numbers come from `graphing/output/assignment_summary.csv`.
+Speedup ranges from **2.90x to 3.02x** (average **~2.96x**). An Amdahl prediction from the 1–3 worker serial fraction is optimistic here (**+50% to +57%**). Checkpoint time at 5 workers is **5.44%–7.70%** of wall clock. Numbers come from `graphing/output/assignment_summary.csv`.
 
 ### Runtime scaling
 
@@ -94,7 +94,7 @@ Checkpoint share of runtime grows with more workers: the same reporting work is 
 
 ![Predicted vs measured 5-worker runtime](graphing/output/prediction_vs_measured.png)
 
-A serial-fraction prediction from the 1–3 worker runs underestimates 5-worker time on this machine (**+51% to +80%**). Startup and connect cost do not shrink the way the simple model assumes.
+A serial-fraction prediction from the 1–3 worker runs underestimates 5-worker time on this machine (**+50% to +57%**). Startup and connect cost do not shrink the way the simple model assumes.
 
 ### Regenerating the diagrams
 
