@@ -54,23 +54,23 @@ The controller parses one shadow entry, opens SQLite, and listens on TCP. Each w
 
 ## Benchmarks
 
-Bcrypt lab runs, 1 vs 5 workers. Compute scales near-linearly; the gap to a perfect 5x is serial overhead from checkpoints and the network.
+Bcrypt fixture suite from `make graphs` on this tree. Adding workers cuts wall-clock time; the gap to a perfect 5x is coordination (connect, dispatch, checkpoints), which is a larger slice on these short runs.
 
 | Password | 1 worker | 5 workers | Speedup |
 | --- | ---: | ---: | ---: |
-| Ace | 15.98s | 5.24s | 3.05x |
-| Bad | 22.12s | 5.93s | 3.73x |
-| Cab | 29.74s | 8.72s | 3.41x |
-| Dad | 37.36s | 9.42s | 3.97x |
-| Ear | 43.99s | 13.25s | 3.32x |
+| Ace | 2.59s | 1.02s | 2.55x |
+| Bad | 4.97s | 1.72s | 2.89x |
+| Cab | 7.47s | 2.57s | 2.91x |
+| Dad | 9.95s | 3.31s | 3.01x |
+| Ear | 12.43s | 4.08s | 3.05x |
 
-Speedup ranges from **3.05x to 3.97x** (average **~3.50x**). Amdahl-style 5-worker prediction error is **-13.73% to +29.05%**. Checkpoint time at 5 workers is **10.27%–16.27%** of wall clock. Table numbers match `graphing/output/assignment_summary.csv` when that file is present.
+Speedup ranges from **2.55x to 3.05x** (average **~2.88x**). An Amdahl prediction from the 1–3 worker serial fraction is optimistic here (**+51% to +80%**). Checkpoint time at 5 workers is **4.86%–7.16%** of wall clock. Numbers come from `graphing/output/assignment_summary.csv`.
 
 ### Runtime scaling
 
 ![Runtime vs worker count](graphing/output/runtime_scaling.png)
 
-Wall-clock time drops from 1 to 5 workers. 2- and 3-worker runs are noisier (Ace’s 3-worker point is an outlier); the 1-to-5 comparison is the scaling claim.
+Wall-clock time falls as workers are added. Longer passwords (Dad, Ear) keep more of the speedup because compute still dominates coordination.
 
 ### Speedup
 
@@ -94,17 +94,15 @@ Checkpoint share of runtime grows with more workers: the same reporting work is 
 
 ![Predicted vs measured 5-worker runtime](graphing/output/prediction_vs_measured.png)
 
-A serial-fraction prediction from the 1-worker run is close on some passwords and off on others. The spread (**-13.73% to +29.05%**) is the honest result, not a fitted curve.
+A serial-fraction prediction from the 1–3 worker runs underestimates 5-worker time on this machine (**+51% to +80%**). Startup and connect cost do not shrink the way the simple model assumes.
 
 ### Regenerating the diagrams
-
-Controller metrics print to the CLI. Paste each run summary into `graphing/data/` under a header `Password <label> Worker <n>`, then:
 
 ```bash
 make graphs
 ```
 
-That runs `./graphing/generate.sh` and writes PNGs plus `graphing/output/assignment_summary.csv`. Commit `graphing/output/` when those numbers change this README.
+That rebuilds the current controller and worker, runs Ace/Bad/Cab/Dad/Ear at 1/2/3/5 workers, writes JSON under `graphing/output/runs/`, then plots. No paste step. Use `make plots` only if you already have those JSON files and want to redraw.
 
 ## Quick Start
 
@@ -151,7 +149,7 @@ cd /app/distributed-multi-workers
 **Controller**
 
 ```bash
-go run ./cmd/controller -p PORT -f SHADOW_FILE -u USERNAME -b HEARTBEAT_SECONDS -c PARTITION_SIZE -k CHECKPOINT_INTERVAL [-d SQLITE_DB_PATH] [-reset]
+go run ./cmd/controller -p PORT -f SHADOW_FILE -u USERNAME -b HEARTBEAT_SECONDS -c PARTITION_SIZE -k CHECKPOINT_INTERVAL [-d SQLITE_DB_PATH] [-reset] [-metrics-json PATH]
 ```
 
 | Flag | Meaning |
@@ -164,6 +162,7 @@ go run ./cmd/controller -p PORT -f SHADOW_FILE -u USERNAME -b HEARTBEAT_SECONDS 
 | `-k` | checkpoint interval (candidate attempts) |
 | `-d` | SQLite path (default `cracker.db`, or `SQLITE_DB_PATH`) |
 | `-reset` | drop and recreate tracking tables |
+| `-metrics-json` | write structured metrics JSON (optional) |
 
 **Worker**
 
@@ -214,6 +213,7 @@ That is enough to requeue failed work from the latest checkpoint. A controller c
     ├── data/
     ├── generate.py
     ├── generate.sh
+    ├── run_suite.py
     └── output/
 ```
 
