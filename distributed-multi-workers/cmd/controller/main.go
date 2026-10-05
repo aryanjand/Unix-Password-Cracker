@@ -120,6 +120,9 @@ func main() {
 	manager.BroadcastMessage(protocol.MsgStop)
 	metrics.ObserveEndToEndRuntime(controllerStartedAt, time.Now())
 	metrics.PrintSummary()
+	if err := metrics.WriteJSONFile(cfg.MetricsJSONPath); err != nil {
+		log.Printf("write metrics json: %v", err)
+	}
 
 	const shutdownTimeout = 10 * time.Second
 	if !manager.WaitForShutdown(shutdownTimeout) {

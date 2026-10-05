@@ -16,9 +16,10 @@ type Controller struct {
 	HeartbeatInterval int
 	DBPath            string
 	Reset             bool
+	MetricsJSONPath   string
 }
 
-const ControllerUsage = "Usage: controller -p PORT -f SHADOW_FILE -u USERNAME -b HEARTBEAT_SECONDS -c PARTITION_SIZE -k CHECKPOINT_INTERVAL [-d SQLITE_DB_PATH] [-reset]"
+const ControllerUsage = "Usage: controller -p PORT -f SHADOW_FILE -u USERNAME -b HEARTBEAT_SECONDS -c PARTITION_SIZE -k CHECKPOINT_INTERVAL [-d SQLITE_DB_PATH] [-reset] [-metrics-json PATH]"
 
 func ParseController(args []string) (Controller, error) {
 	var cfg Controller
@@ -34,6 +35,7 @@ func ParseController(args []string) (Controller, error) {
 	fs.IntVar(&cfg.PartitionSize, "s", 1, "partition size for password space")
 	fs.StringVar(&cfg.DBPath, "d", defaultDBPath(), "sqlite database file path")
 	fs.BoolVar(&cfg.Reset, "reset", false, "reset persisted tracking state before startup")
+	fs.StringVar(&cfg.MetricsJSONPath, "metrics-json", "", "write structured metrics JSON to this path")
 
 	if err := fs.Parse(args); err != nil {
 		return Controller{}, err
