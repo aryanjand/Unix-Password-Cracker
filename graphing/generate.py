@@ -9,6 +9,7 @@ assignment measurement runs in graphing/data/.
 
 from __future__ import annotations
 
+import json
 import re
 from pathlib import Path
 
@@ -22,6 +23,26 @@ import pandas as pd
 HERE = Path(__file__).resolve().parent
 DATA_DIR = HERE / "data"
 OUT_DIR = HERE / "output"
+RUNS_DIR = OUT_DIR / "runs"
+
+JSON_SUMMARY_FIELDS = (
+    "controller_side_parsing_time_ms",
+    "job_dispatch_registration_overhead_ms",
+    "work_assignment_overhead_total_ms",
+    "work_assignment_overhead_per_unit_ns",
+    "worker_cracking_time_ms",
+    "result_return_latency_ms",
+    "checkpoint_overhead_ms",
+    "checkpoint_impact_pct",
+    "total_end_to_end_runtime_ms",
+    "controller_overhead_ms",
+    "networking_overhead_ms",
+    "combined_overhead_ms",
+    "checkpoint_observation_count",
+    "checkpoint_avg_ms",
+    "checkpoint_min_ms",
+    "checkpoint_max_ms",
+)
 
 # Default when no `# algo=` header and no algorithm token in the filename.
 DEFAULT_ALGO = "bcrypt"
@@ -379,39 +400,58 @@ def add_derived_seconds(summary_df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-def list_data_files() -> list[Path]:
+def list_text_files() -> list[Path]:
     if not DATA_DIR.is_dir():
-        raise FileNotFoundError(f"Missing data directory: {DATA_DIR}")
+        return []
 
     files = []
     for path in sorted(DATA_DIR.iterdir()):
         if not path.is_file() or path.name.startswith("."):
             continue
-        if path.suffix.lower() in {".png", ".csv", ".md", ".py"}:
+        if path.suffix.lower() in {".png", ".csv", ".md", ".py", ".json"}:
             continue
         files.append(path)
-
-    if not files:
-        raise RuntimeError(f"No log files found in {DATA_DIR}")
     return files
 
 
-def load_all_runs() -> tuple[pd.DataFrame, pd.DataFrame]:
-    summaries = []
-    metrics = []
-    for path in list_data_files():
-        text = path.read_text(encoding="utf-8")
-        algo = infer_algorithm(path, text)
-        summary_df, metrics_df = parse_runs(text, hash_algorithm=algo)
-        if summary_df.empty:
-            print(f"warning: no runs parsed from {path.name}")
+def list_json_run_files() -> list[Path]:
+    files = []
+    for directory in (RUNS_DIR, DATA_DIR):
+        if not directory.is_dir():
             continue
-        summaries.append(summary_df)
-        if not metrics_df.empty:
-            metrics.append(metrics_df)
+        for path in sorted(directory.glob("*.json")):
+            if path.name.endswith(".controller.json"):
+                continue
+            files.append(path)
+    return files
 
+
+def summary_from_json(path: Path) -> dict:
+    data = json.loads(path.read_text(encoding="utf-8"))
+    if "password_label" not in data or "number_of_workers" not in data:
+        raise ValueError(f"{path} is missing password_label/number_of_workers")
+
+    row = empty_summary(
+        str(data["password_label"]),
+        int(data["number_of_workers"]),
+        str(data.get("hash_algorithm") or infer_algorithm(path, "")),
+    )
+    for key in JSON_SUMMARY_FIELDS:
+        if key in data and data[key] is not None:
+            row[key] = data[key]
+    row["run_label"] = (
+        f"{row['password_label']} - {row['number_of_workers']} workers"
+    )
+    return row
+
+
+def finalize_frames(
+    summaries: list[pd.DataFrame], metrics: list[pd.DataFrame]
+) -> tuple[pd.DataFrame, pd.DataFrame]:
     if not summaries:
-        raise RuntimeError("No runs were parsed. Check graphing/data/ formatting.")
+        raise RuntimeError(
+            "No runs were parsed. Run `make graphs` or add JSON under graphing/output/runs/."
+        )
 
     summary_df = pd.concat(summaries, ignore_index=True)
     metrics_df = (
@@ -434,6 +474,35 @@ def load_all_runs() -> tuple[pd.DataFrame, pd.DataFrame]:
         ).drop(columns=["_pw_order"]).reset_index(drop=True)
 
     return summary_df, metrics_df
+
+
+def load_all_runs() -> tuple[pd.DataFrame, pd.DataFrame]:
+    json_files = list_json_run_files()
+    if json_files:
+        print(f"Loading {len(json_files)} JSON run(s)")
+        summaries = [pd.DataFrame([summary_from_json(path)]) for path in json_files]
+        return finalize_frames(summaries, [])
+
+    text_files = list_text_files()
+    if not text_files:
+        raise RuntimeError(
+            "No JSON runs or text logs found. Run `make graphs` to execute the suite."
+        )
+
+    summaries = []
+    metrics = []
+    for path in text_files:
+        text = path.read_text(encoding="utf-8")
+        algo = infer_algorithm(path, text)
+        summary_df, metrics_df = parse_runs(text, hash_algorithm=algo)
+        if summary_df.empty:
+            print(f"warning: no runs parsed from {path.name}")
+            continue
+        summaries.append(summary_df)
+        if not metrics_df.empty:
+            metrics.append(metrics_df)
+
+    return finalize_frames(summaries, metrics)
 
 
 def ordered_passwords(df: pd.DataFrame) -> list[str]:
@@ -684,6 +753,8 @@ def main() -> None:
     summary_df.to_csv(summary_path, index=False)
     if not metrics_df.empty:
         metrics_df.to_csv(details_path, index=False)
+    elif details_path.exists():
+        details_path.unlink()
 
     save_runtime_scaling(summary_df, OUT_DIR / "runtime_scaling.png")
     save_speedup(summary_df, OUT_DIR / "speedup.png")
@@ -691,7 +762,8 @@ def main() -> None:
     save_checkpoint_impact(summary_df, OUT_DIR / "checkpoint_impact.png")
     save_prediction_vs_measured(summary_df, OUT_DIR / "prediction_vs_measured.png")
 
-    print(f"Parsed {len(summary_df)} runs from {DATA_DIR}")
+    source = RUNS_DIR if list_json_run_files() else DATA_DIR
+    print(f"Parsed {len(summary_df)} runs from {source}")
     print(f"Saved: {summary_path}")
     if details_path.exists():
         print(f"Saved: {details_path}")

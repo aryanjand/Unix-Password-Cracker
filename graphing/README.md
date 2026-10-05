@@ -1,29 +1,24 @@
 # Graphing
 
-One-command charts from pasted controller metric logs.
+`make graphs` is the full pipeline: build the current Go binaries, run the bcrypt fixture suite, write JSON metrics, then draw the README charts.
 
 ```bash
 make graphs
 ```
 
-That creates `graphing/.venv` if needed, installs `graphing/requirements.txt`, and writes CSVs plus PNGs to `graphing/output/`.
+`make plots` redraws from the last `graphing/output/runs/*.json` (or the older text logs in `graphing/data/`) without starting workers.
 
-## Adding a new run
+## What the suite does
 
-1. Copy the controller's `===== Runtime Metrics Summary =====` block.
-2. Put a paste-time label on the line above it. The Go controller does not emit this line:
+For Ace, Bad, Cab, Dad, and Ear it starts one controller and N workers (`N` = 1, 2, 3, 5), using `testdata/shadow/shadow_*_bcrypt`. The controller writes millisecond metrics with `-metrics-json`. `run_suite.py` only adds the labels (password, worker count, algorithm).
 
-   ```
-   Password Ace Worker 1
-   ```
+Subset while iterating:
 
-   Use the password nickname and the worker count from that run.
+```bash
+./graphing/generate.sh --passwords Ace --workers 1
+```
 
-3. Optional header at the top of the file (otherwise the filename is checked for `bcrypt` / `sha256` / `sha512` / `md5` / `yescrypt`, then it defaults to bcrypt):
+## Output
 
-   ```
-   # algo=bcrypt
-   ```
-
-4. Drop the file in `graphing/data/` (any text file; comments starting with `#` are ignored).
-5. Run `make graphs` again from the repo root (or `./generate.sh` from this directory).
+- `graphing/output/runs/<password>_w<n>.json` — one structured run
+- `graphing/output/*.png` and `assignment_summary.csv` — README artifacts
