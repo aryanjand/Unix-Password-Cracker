@@ -29,6 +29,19 @@ func TestParseControllerRejectsBadPort(t *testing.T) {
 	}
 }
 
+func TestParseControllerMetricsJSONPath(t *testing.T) {
+	cfg, err := ParseController([]string{
+		"-p", "8080", "-f", "shadow", "-u", "aryan", "-b", "1", "-c", "1000", "-k", "100",
+		"-metrics-json", "/tmp/run.json",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cfg.MetricsJSONPath != "/tmp/run.json" {
+		t.Fatalf("MetricsJSONPath = %q", cfg.MetricsJSONPath)
+	}
+}
+
 func TestParseControllerPartitionAliases(t *testing.T) {
 	common := []string{"-p", "8080", "-f", "shadow", "-u", "aryan", "-b", "1", "-k", "100"}
 
