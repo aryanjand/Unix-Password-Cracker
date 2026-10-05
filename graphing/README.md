@@ -22,3 +22,4 @@ Subset while iterating:
 
 - `graphing/output/runs/<password>_w<n>.json` — one structured run
 - `graphing/output/*.png` and `assignment_summary.csv` — README artifacts
+- root `README.md` benchmark table and the two number sentences next to it

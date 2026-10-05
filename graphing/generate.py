@@ -21,6 +21,8 @@ import pandas as pd
 
 
 HERE = Path(__file__).resolve().parent
+REPO = HERE.parent
+README_PATH = REPO / "README.md"
 DATA_DIR = HERE / "data"
 OUT_DIR = HERE / "output"
 RUNS_DIR = OUT_DIR / "runs"
@@ -723,11 +725,8 @@ def save_prediction_vs_measured(summary_df: pd.DataFrame, out_path: Path) -> Non
     plt.close(fig)
 
 
-def print_one_vs_five(summary_df: pd.DataFrame) -> None:
-    print("\n1-worker vs 5-worker runtime (seconds)")
-    print(
-        f"{'Password':<10} {'1 worker (s)':>14} {'5 workers (s)':>15} {'Speedup':>10}"
-    )
+def one_vs_five_rows(summary_df: pd.DataFrame) -> list[dict]:
+    rows = []
     for label in ordered_passwords(summary_df):
         sub = summary_df[summary_df["password_label"] == label]
         one = sub[sub["number_of_workers"] == 1]
@@ -736,8 +735,112 @@ def print_one_vs_five(summary_df: pd.DataFrame) -> None:
             continue
         t1 = float(one.iloc[0]["total_end_to_end_runtime_s"])
         t5 = float(five.iloc[0]["total_end_to_end_runtime_s"])
-        speedup = t1 / t5 if t5 else float("nan")
-        print(f"{label:<10} {t1:14.3f} {t5:15.3f} {speedup:10.2f}×")
+        rows.append(
+            {
+                "label": label,
+                "t1": t1,
+                "t5": t5,
+                "speedup": (t1 / t5) if t5 else float("nan"),
+                "prediction_error_pct": float(five.iloc[0]["prediction_error_pct"]),
+                "checkpoint_impact_pct": float(five.iloc[0]["checkpoint_impact_pct"]),
+            }
+        )
+    return rows
+
+
+def print_one_vs_five(summary_df: pd.DataFrame) -> None:
+    print("\n1-worker vs 5-worker runtime (seconds)")
+    print(
+        f"{'Password':<10} {'1 worker (s)':>14} {'5 workers (s)':>15} {'Speedup':>10}"
+    )
+    for row in one_vs_five_rows(summary_df):
+        print(
+            f"{row['label']:<10} {row['t1']:14.3f} {row['t5']:15.3f} {row['speedup']:10.2f}×"
+        )
+
+
+def _signed_pct_range(values: list[float]) -> str:
+    lo, hi = min(values), max(values)
+
+    def fmt(value: float) -> str:
+        sign = "+" if value >= 0 else ""
+        return f"{sign}{round(value)}%"
+
+    return f"{fmt(lo)} to {fmt(hi)}"
+
+
+def readme_benchmark_table(rows: list[dict]) -> str:
+    lines = [
+        "| Password | 1 worker | 5 workers | Speedup |",
+        "| --- | ---: | ---: | ---: |",
+    ]
+    for row in rows:
+        lines.append(
+            f"| {row['label']} | {row['t1']:.2f}s | {row['t5']:.2f}s | {row['speedup']:.2f}x |"
+        )
+    return "\n".join(lines) + "\n"
+
+
+def readme_speedup_sentence(rows: list[dict]) -> str:
+    speedups = [row["speedup"] for row in rows]
+    errors = [row["prediction_error_pct"] for row in rows]
+    checkpoints = [row["checkpoint_impact_pct"] for row in rows]
+    return (
+        f"Speedup ranges from **{min(speedups):.2f}x to {max(speedups):.2f}x** "
+        f"(average **~{sum(speedups) / len(speedups):.2f}x**). "
+        "An Amdahl prediction from the 1–3 worker serial fraction is optimistic here "
+        f"(**{_signed_pct_range(errors)}**). "
+        f"Checkpoint time at 5 workers is **{min(checkpoints):.2f}%–{max(checkpoints):.2f}%** "
+        "of wall clock. Numbers come from `graphing/output/assignment_summary.csv`."
+    )
+
+
+def readme_prediction_sentence(rows: list[dict]) -> str:
+    errors = [row["prediction_error_pct"] for row in rows]
+    return (
+        "A serial-fraction prediction from the 1–3 worker runs underestimates "
+        "5-worker time on this machine "
+        f"(**{_signed_pct_range(errors)}**)."
+    )
+
+
+README_TABLE_RE = re.compile(
+    r"\| Password \| 1 worker \| 5 workers \| Speedup \|\n"
+    r"\| --- \| ---: \| ---: \| ---: \|\n"
+    r"(?:\|[^\n]+\n)+",
+)
+README_STATS_RE = re.compile(
+    r"Speedup ranges from \*\*[^*]+\*\* \(average \*\*~[^*]+\*\*\)\. "
+    r"An Amdahl prediction from the 1–3 worker serial fraction is optimistic here "
+    r"\(\*\*[^*]+\*\*\)\. "
+    r"Checkpoint time at 5 workers is \*\*[^*]+\*\* of wall clock\. "
+    r"Numbers come from `graphing/output/assignment_summary\.csv`\."
+)
+README_PRED_RE = re.compile(
+    r"A serial-fraction prediction from the 1–3 worker runs underestimates "
+    r"5-worker time on this machine \(\*\*[^*]+\*\*\)\."
+)
+
+
+def update_readme(summary_df: pd.DataFrame, path: Path = README_PATH) -> None:
+    rows = one_vs_five_rows(summary_df)
+    if not rows:
+        raise RuntimeError("Need 1-worker and 5-worker runs to update README.md.")
+
+    text = path.read_text(encoding="utf-8")
+    replacements = (
+        (README_TABLE_RE, readme_benchmark_table(rows)),
+        (README_STATS_RE, readme_speedup_sentence(rows)),
+        (README_PRED_RE, readme_prediction_sentence(rows)),
+    )
+    for pattern, replacement in replacements:
+        updated, count = pattern.subn(replacement, text, count=1)
+        if count != 1:
+            raise RuntimeError(f"Could not find README benchmark block matching {pattern.pattern}")
+        text = updated
+
+    path.write_text(text, encoding="utf-8")
+    print(f"Updated: {path}")
 
 
 def main() -> None:
@@ -771,6 +874,7 @@ def main() -> None:
         print(f"Saved: {OUT_DIR / name}")
 
     print_one_vs_five(summary_df)
+    update_readme(summary_df)
 
 
 if __name__ == "__main__":
